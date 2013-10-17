@@ -13,9 +13,9 @@ def jformat(json_data):
 items = []
 constraints = lambda values: (
                                       values['cpu'] < 99,
-#                                      values['mem'] < 100,
-#                                      values['disk'] < 100,
-#                                      values['net'] < 100,
+                                      values['mem'] < 100,
+                                      values['disk'] < 100,
+                                      values['net'] < 100,
 #                                      values['nItems'] <= 10,
 #                                      values['nItems'] >= 5
                                       # we could use lambda-func, e,g.
