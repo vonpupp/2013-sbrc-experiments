@@ -3,8 +3,8 @@
 
 import json
 from openopt import *
-from numpy import sin, cos
 import lib.tracegen.tracegen as tracegen
+from itertools import islice
 
 def jformat(json_data):
     return json.dumps(json_data, sort_keys=True,
@@ -32,7 +32,7 @@ items = [{
               'disk': t[2],
               'net': t[3],
               'n':  1
-         } for i,t in enumerate(trace)]
+         } for i,t in islice(enumerate(trace), 10)]
 
 
 def gen_vms():
