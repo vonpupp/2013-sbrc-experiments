@@ -79,7 +79,7 @@ def solve_host():
     global constraints
 #    print constraints
     p = KSP('weight', list(items), constraints = constraints)
-    result = p.solve('glpk', iprint = 0)
+    result = p.solve('glpk', iprint = -1)
     #print('INDEX: {}'.format(map(get_item_index, [12, 4])))
     return result
 
