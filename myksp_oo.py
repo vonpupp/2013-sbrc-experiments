@@ -34,43 +34,19 @@ def add_constraint(values, constraint):
 def add_constraints(values, constraint_list):
     return [add_constraint(values, constraint) for constraint in constraint_list]
 
-def cons_cpu():
+def gen_costraints(constraint_list):
     global constraints
-    constraints = lambda values: (add_constraints(values, ['cpu'])
-    
-def cons_cpu_mem():
-    constraints = lambda values: (
-                                      [values['cpu'] < 100,
-                                      values['mem'] < 100]
-                                 )
-    
-def cons_cpu_mem_disk():
-    constraints = lambda values: (
-                                      [values['cpu'] < 100,
-                                      values['mem'] < 100,
-                                      values['disk'] < 100]
-                                 )
-    
-def cons_all():
-    global constraints
-    constraints = lambda values: (
-                                       add_constraints(values, ['cpu', 'mem', 'disk', 'net'])
-                                 )
+    constraints = lambda values: (add_constraints(values, constraint_list))
 
 def solve1():
     global items
     global constraints
     print constraints
     p = KSP('weight', items, constraints = constraints)
-    return p.solve('glpk', iprint = 0) # requires cvxopt and glpk installed, see http://openopt.org/KSP for other solvers
-    #Solver:   Time Elapsed = 0.73 	CPU Time Elapsed = 0.55
-    #objFunValue: 27.389749 (feasible, MaxResidual = 0)
+    return p.solve('glpk', iprint = 0)
     
 def print_results(r):
     print(r.xf)
-    # pay attention that Python indexation starts from zero: item 0, item 1 ...
-    # if fields 'name' are absent, you'll have list of numbers instead of Python dict
-
     cpu = mem = disk = net = 0
     weight = 0
     for item in r.xf:
@@ -94,9 +70,9 @@ def print_results(r):
 
 
 gen_vms()
-#cons_cpu()
-#cons_cpu_mem()
-#cons_cpu_mem_disk()
-cons_all()
+#gen_costraints(['cpu'])
+#gen_costraints(['net'])
+#gen_costraints(['net', 'cpu'])
+gen_costraints(['cpu', 'mem', 'disk', 'net'])
 r = solve1()
 print_results(r)
