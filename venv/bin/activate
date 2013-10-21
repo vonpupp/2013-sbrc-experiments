@@ -39,7 +39,7 @@ deactivate () {
 # unset irrelevant variables
 deactivate nondestructive
 
-VIRTUAL_ENV="/home/afu/venv"
+VIRTUAL_ENV="/home/afu/2013-sbrc-experiments/venv"
 export VIRTUAL_ENV
 
 _OLD_VIRTUAL_PATH="$PATH"
