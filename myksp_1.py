@@ -11,15 +11,15 @@ def jformat(json_data):
                       indent=4, separators=(',', ': '))
 
 items = []
-constraints = lambda values: (
-                                      values['cpu'] < 99,
-                                      values['mem'] < 99,
-                                      values['disk'] < 99,
-                                      values['net'] < 99,
-#                                      values['nItems'] <= 10,
-#                                      values['nItems'] >= 5
-                                      # we could use lambda-func, e,g.
-                                      # values['mass'] + 4*values['volume'] < 100
+#constraints = lambda values: (
+#                                      values['cpu'] < 99,
+#                                      values['mem'] < 99,
+#                                      values['disk'] < 99,
+#                                      values['net'] < 99,
+##                                      values['nItems'] <= 10,
+##                                      values['nItems'] >= 5
+#                                      # we could use lambda-func, e,g.
+#                                      # values['mass'] + 4*values['volume'] < 100
                              )
 #tg = tracegen.TraceGenerator()
 #trace = tg.gen_trace()
