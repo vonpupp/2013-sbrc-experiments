@@ -84,22 +84,27 @@ def solve_host():
     return result
 
 def solve_hosts():
+    placement = []
     for host in range(hosts):
         vms = solve_host()
+        print('HOST: {} ({})'.format(host, items_str('VMs', vms.xf)))
+        #placement[host] = 0
         if vms is not None:
             print_results(vms)
             #sorted_vms = sort(vms.xf)
 #            print('solve_hosts: {}'.format(map(get_item_index, vms.xf)))
-            print_items('vms', vms.xf)
+#            print_items('vms', vms.xf)
             items_remove(vms.xf)
 #        print('items: {}'.format(items))
-
-def print_items(caption, items_list):
+    return placement
+   
+def items_str(caption, items_list):
     to_print = []
     for item in items_list:
         i = int(item.split()[1])
         to_print += [i]
-    print('{}: {}'.format(caption, to_print))
+    return '{}: {}'.format(caption, to_print)
+
 
 def print_results(r):
     #print(r.xf)
@@ -108,7 +113,7 @@ def print_results(r):
     for item in r.xf:
         i = int(item.split()[1])
         v = get_item_values(item)
-        print('{}, values: ({})'.format(item, v))
+        print('  {}, values: ({})'.format(item, v))
         cpu += v['cpu']
         mem += v['mem']
         disk += v['disk']
@@ -119,18 +124,24 @@ def print_results(r):
 
     #print r.xf
     #t = sum(r.xf['weight'])
-    print('cpu: {}'.format(cpu))
-    print('mem: {}'.format(mem))
-    print('disk: {}'.format(disk))
-    print('net: {}'.format(net))
-    print('weight: {}'.format(weight))
+    print('  cpu: {}'.format(cpu))
+    print('  mem: {}'.format(mem))
+    print('  disk: {}'.format(disk))
+    print('  net: {}'.format(net))
+    print('  weight: {}'.format(weight))
 
 
-gen_vms()
-#gen_costraints(['cpu'])
-#gen_costraints(['net'])
-#gen_costraints(['net', 'cpu'])
-gen_costraints(['cpu', 'mem', 'disk', 'net'])
-#r = solve_host()
-solve_hosts()
-#print_results(r)
+def my_multi_bpp_place():
+    gen_vms()
+#    gen_costraints(['cpu'])
+#    gen_costraints(['net'])
+#    gen_costraints(['net', 'cpu'])
+    gen_costraints(['cpu', 'mem', 'disk', 'net'])
+#    r = solve_host()
+    placement = solve_hosts()
+    print placement
+#    print_results(r)
+
+
+if __name__ == "__main__":
+    my_multi_bpp_place()
