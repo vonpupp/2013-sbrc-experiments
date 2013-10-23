@@ -18,35 +18,39 @@ vms_list = []
 constraints = None
 hosts = 10
 
-class VirtualMachine(object):
+class VirtualMachine(dict):
     __count__ = 0
     def __init__(self, cpu, mem, disk, net):
         #id = uuid.uuid1()
+        self.value = {}
         self.id = '%d' % VirtualMachine.__count__
-        self.weight = 1
-        self.cpu = cpu
-        self.mem = mem
-        self.disk = disk
-        self.net = net
-        self.n = 1
+        self.value['weight'] = 1
+        self.value['cpu'] = cpu
+        self.value['mem'] = mem
+        self.value['disk'] = disk
+        self.value['net'] = net
+        self.value['n'] = 1
         VirtualMachine.__count__ += 1
-        
+
     def __str__(self):
         result = 'VM{}({}, {}, {}, {})'.format(
-            self.id, 
-            self.cpu, self.mem, 
-            self.disk, self.net)
+            self.id,
+            self.value['cpu'], self.value['mem'],
+            self.value['disk'], self.value['net'])
         return result
-      
+
     def __getitem__(self, attribute):
         # http://stackoverflow.com/questions/5818192/getting-field-names-reflectively-with-python
         # val = getattr(ob, attr)
-        print attribute
         if type(attribute) is str:
-            #result = getattr(self, attribute)
-            result = attrgetter(attribute)
-            print('{}'.format(result))
+            ob = self.value
+            #result = getattr(ob, attribute)
+            result = ob[attribute]
+            #result = attrgetter(attribute)
+            print('getitem: attribute:{}, value:{}'.format(attribute, result))
             return result
+        else:
+            print('getitem: attribute is not a string, is:{}, value:{}'.format(type(attribute), attribute))
 
 
 class VMManager:
@@ -55,13 +59,13 @@ class VMManager:
         trace = tg.gen_trace()
         self.items = [VirtualMachine(t[0], t[1], t[2], t[3])
                           for i, t in islice(enumerate(trace), 200)]
-    
+
     def __str__(self):
         result = ''
         for item in self.items:
             result += str(item) + ', '
         return result
-      
+
     def __getitem__(self, attribute):
         return self.items[attribute]
 
@@ -70,7 +74,7 @@ class PhysicalMachine:
     def __init__(self):
         name = 'PM %d' % self.count,
         vms = []
-        
+
     def used_cpu(self):
         pass
     def used_mem(self):
@@ -79,16 +83,22 @@ class PhysicalMachine:
         pass
     def used_net(self):
         pass
-      
+
     def consumed_power(self):
         pass
-      
+
 class PMManager:
     def __init__(self):
         pass
-    
+
     def __str__(self):
         pass
+
+def gen_costraint(self, values, constraint):
+    return values.value[constraint] < 99
+
+def add_constraints(self, values, constraint_list):
+    return [self.add_constraint(values, constraint) for constraint in constraint_list]
 
 class OpenOptStrategyPlacement:
     def __init__(self, items, hosts):
@@ -96,31 +106,32 @@ class OpenOptStrategyPlacement:
         self.items = items
         self.hosts = hosts
         self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
-      
-    def gen_costraint(self, values, constraint):
-        return values[constraint] < 99
-      
-    def add_constraints(self, values, constraint_list):
-        return [self.add_constraint(values, constraint) for constraint in constraint_list]
+
+#    def gen_costraint(self, values, constraint):
+#        return values.value[constraint] < 99
+
+#    def add_constraints(self, values, constraint_list):
+#        return [self.add_constraint(values, constraint) for constraint in constraint_list]
 
     def gen_costraints(self, constraint_list):
-        self.constraints = lambda values: (self.add_constraints(values, constraint_list))
-    
+        self.constraints = lambda values: (add_constraints(values, constraint_list))
+
     def get_openopt_vms(self, items_list):
         result = []
         for item in items_list:
             # i = int(item.split()[1])
             result += [item]
         return result
-    
+
     def solve_host(self):
         #print(list(self.items))
-        #print(self.items[0])
-        #print(self.constraints)
+        print(self.items[0])
+        print(self.constraints)
         p = KSP('weight', self.items, constraints = self.constraints)
-        #result = p.solve('glpk', iprint = -1)
-        #return result
-        return 10
+        result = p.solve('glpk', iprint = -1)
+        print result.xf
+        return result
+#        return 10
 
     def solve_hosts(self):
         placement = []
@@ -138,7 +149,7 @@ class OpenOptStrategyPlacement:
 #             print('items: {}'.format(items))
         #TODO: Assing to host
         return placement
-  
+
 class AntColonyStrategyPlacement:
     pass
 
@@ -154,16 +165,16 @@ class Manager:
 #    print placement
 #    power = calculate_placement_power(placement)
 #    print('TOTAL POWER: {} WATTS'.format(power))
-        
+
     def assign_vm_host(self, vm, host):
         pass
-      
+
     def unplaced_vms(self):
         pass
-      
+
     def placed_vms(self):
         pass
-    
+
 def gen_vms():
     tg = tracegen.TraceGenerator()
     trace = tg.gen_trace()
@@ -183,7 +194,7 @@ def add_constraint(values, constraint):
     # http://stackoverflow.com/questions/5818192/getting-field-names-reflectively-with-python
     # val = getattr(ob, attr)
     return values[constraint] < 99
-  
+
 def add_constraints(values, constraint_list):
     return [add_constraint(values, constraint) for constraint in constraint_list]
 
@@ -198,7 +209,7 @@ def get_item_values(id):
     else:
         result = None
     return result
-	  
+
 def get_item_index(id):
     result = -1
     i = 0
@@ -212,7 +223,7 @@ def get_item_index(id):
             result = i
         i += 1
     return result
-  
+
 #def get_item_id(value):
 #    result = -1
 #    item = items[value]
@@ -258,7 +269,7 @@ def get_openopt_vms(items_list):
         # i = int(item.split()[1])
         result += [item]
     return result
-   
+
 def print_results(r):
     #print(r.xf)
     cpu = mem = disk = net = 0
@@ -289,7 +300,7 @@ def cpu_power(cpu):
     p_busy = 250.0
     result = p_idle + (p_busy - p_idle) * cpu/100
     return result
-    
+
 def get_cpu(host):
     result = 0
     for vm_id in host:
@@ -338,7 +349,8 @@ if __name__ == "__main__":
     print(m)
     print(m.vmm.items)
     for vm in vmm.items:
-        print('{}'.format(vm['cpu']))
+        print('{}'.format(vm.value['cpu']))
+        print('{}'.format(vm.value['n']))
         #print('{}'.format(vm['mem']))
         #print('{}'.format(vm['disk']))
         #print('{}'.format(vm['net']))
