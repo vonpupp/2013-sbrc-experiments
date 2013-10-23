@@ -6,6 +6,7 @@ from openopt import *
 import lib.tracegen.tracegen as tracegen
 from itertools import islice
 import uuid
+from operator import attrgetter
 
 
 def jformat(json_data):
@@ -42,7 +43,10 @@ class VirtualMachine(object):
         # val = getattr(ob, attr)
         print attribute
         if type(attribute) is str:
-            return getattr(self, attribute)
+            #result = getattr(self, attribute)
+            result = attrgetter(attribute)
+            print('{}'.format(result))
+            return result
 
 
 class VMManager:
@@ -93,7 +97,7 @@ class OpenOptStrategyPlacement:
         self.hosts = hosts
         self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
       
-    def gen_costraint(self, value, constraint):
+    def gen_costraint(self, values, constraint):
         return values[constraint] < 99
       
     def add_constraints(self, values, constraint_list):
@@ -111,11 +115,12 @@ class OpenOptStrategyPlacement:
     
     def solve_host(self):
         #print(list(self.items))
-        print(self.items[0])
+        #print(self.items[0])
         #print(self.constraints)
-        #p = KSP('weight', list(self.items), constraints = self.constraints)
+        p = KSP('weight', self.items, constraints = self.constraints)
         #result = p.solve('glpk', iprint = -1)
         #return result
+        return 10
 
     def solve_hosts(self):
         placement = []
@@ -332,5 +337,10 @@ if __name__ == "__main__":
     m = Manager(strategy)
     print(m)
     print(m.vmm.items)
+    for vm in vmm.items:
+        print('{}'.format(vm['cpu']))
+        #print('{}'.format(vm['mem']))
+        #print('{}'.format(vm['disk']))
+        #print('{}'.format(vm['net']))
     placement = strategy.solve_host()
     #my_multi_bpp_place()
