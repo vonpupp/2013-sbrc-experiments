@@ -5,6 +5,8 @@ import json
 from openopt import *
 import lib.tracegen.tracegen as tracegen
 from itertools import islice
+import uuid
+
 
 def jformat(json_data):
     return json.dumps(json_data, sort_keys=True,
@@ -15,8 +17,148 @@ vms_list = []
 constraints = None
 hosts = 10
 
+class VirtualMachine(object):
+    __count__ = 0
+    def __init__(self, cpu, mem, disk, net):
+        #id = uuid.uuid1()
+        self.id = '%d' % VirtualMachine.__count__
+        self.weight = 1
+        self.cpu = cpu
+        self.mem = mem
+        self.disk = disk
+        self.net = net
+        self.n = 1
+        VirtualMachine.__count__ += 1
+        
+    def __str__(self):
+        result = 'VM{}({}, {}, {}, {})'.format(
+            self.id, 
+            self.cpu, self.mem, 
+            self.disk, self.net)
+        return result
+      
+    def __getitem__(self, attribute):
+        # http://stackoverflow.com/questions/5818192/getting-field-names-reflectively-with-python
+        # val = getattr(ob, attr)
+        print attribute
+        if type(attribute) is str:
+            return getattr(self, attribute)
 
 
+class VMManager:
+    def __init__(self):
+        tg = tracegen.TraceGenerator()
+        trace = tg.gen_trace()
+        self.items = [VirtualMachine(t[0], t[1], t[2], t[3])
+                          for i, t in islice(enumerate(trace), 200)]
+    
+    def __str__(self):
+        result = ''
+        for item in self.items:
+            result += str(item) + ', '
+        return result
+      
+    def __getitem__(self, attribute):
+        return self.items[attribute]
+
+class PhysicalMachine:
+    count = 0
+    def __init__(self):
+        name = 'PM %d' % self.count,
+        vms = []
+        
+    def used_cpu(self):
+        pass
+    def used_mem(self):
+        pass
+    def used_disk(self):
+        pass
+    def used_net(self):
+        pass
+      
+    def consumed_power(self):
+        pass
+      
+class PMManager:
+    def __init__(self):
+        pass
+    
+    def __str__(self):
+        pass
+
+class OpenOptStrategyPlacement:
+    def __init__(self, items, hosts):
+        self.constraints = None
+        self.items = items
+        self.hosts = hosts
+        self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
+      
+    def gen_costraint(self, value, constraint):
+        return values[constraint] < 99
+      
+    def add_constraints(self, values, constraint_list):
+        return [self.add_constraint(values, constraint) for constraint in constraint_list]
+
+    def gen_costraints(self, constraint_list):
+        self.constraints = lambda values: (self.add_constraints(values, constraint_list))
+    
+    def get_openopt_vms(self, items_list):
+        result = []
+        for item in items_list:
+            # i = int(item.split()[1])
+            result += [item]
+        return result
+    
+    def solve_host(self):
+        #print(list(self.items))
+        print(self.items[0])
+        #print(self.constraints)
+        #p = KSP('weight', list(self.items), constraints = self.constraints)
+        #result = p.solve('glpk', iprint = -1)
+        #return result
+
+    def solve_hosts(self):
+        placement = []
+        for host in range(hosts):
+            vms = self.solve_host()
+            ids = self.get_openopt_vms(vms.xf)
+            print('HOST: {} ({})'.format(host, ids))
+            #print('HOST: {} ({})'.format(host, items_str('VMs', vms.xf)))
+            placement.append(ids)
+            if vms is not None:
+                #print_results(vms)
+#                print('solve_hosts: {}'.format(map(get_item_index, vms.xf)))
+#                print_items('vms', vms.xf)
+                items_remove(vms.xf)
+#             print('items: {}'.format(items))
+        #TODO: Assing to host
+        return placement
+  
+class AntColonyStrategyPlacement:
+    pass
+
+class Manager:
+    def __init__(self, strategy):
+        self.vmm = VMManager()
+        self.pmm = PMManager()
+        self.strategy = strategy
+#    items = gen_vms()
+#    vms_list = gen_vms()
+#    gen_costraints(['cpu', 'mem', 'disk', 'net'])
+#    placement = solve_hosts()
+#    print placement
+#    power = calculate_placement_power(placement)
+#    print('TOTAL POWER: {} WATTS'.format(power))
+        
+    def assign_vm_host(self, vm, host):
+        pass
+      
+    def unplaced_vms(self):
+        pass
+      
+    def placed_vms(self):
+        pass
+    
 def gen_vms():
     tg = tracegen.TraceGenerator()
     trace = tg.gen_trace()
@@ -33,6 +175,8 @@ def gen_vms():
     return items
 
 def add_constraint(values, constraint):
+    # http://stackoverflow.com/questions/5818192/getting-field-names-reflectively-with-python
+    # val = getattr(ob, attr)
     return values[constraint] < 99
   
 def add_constraints(values, constraint_list):
@@ -183,4 +327,10 @@ def my_multi_bpp_place():
 
 
 if __name__ == "__main__":
-    my_multi_bpp_place()
+    vmm = VMManager()
+    strategy = OpenOptStrategyPlacement(vmm.items, 2)
+    m = Manager(strategy)
+    print(m)
+    print(m.vmm.items)
+    placement = strategy.solve_host()
+    #my_multi_bpp_place()
