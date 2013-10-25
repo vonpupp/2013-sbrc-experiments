@@ -27,7 +27,7 @@ def gen_vms():
                   'disk': t[2],
                   'net': t[3],
                   'n': 1
-             }) for i,t in islice(enumerate(trace), 200)]
+             }) for i,t in islice(enumerate(trace), 288)]
 
 def add_constraint(values, constraint):
     return values[constraint] < 99
