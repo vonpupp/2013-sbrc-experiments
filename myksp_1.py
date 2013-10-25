@@ -20,7 +20,7 @@ items = []
 ##                                      values['nItems'] >= 5
 #                                      # we could use lambda-func, e,g.
 #                                      # values['mass'] + 4*values['volume'] < 100
-                             )
+#                             )
 #tg = tracegen.TraceGenerator()
 #trace = tg.gen_trace()
 #items = [{
@@ -48,7 +48,7 @@ def gen_vms():
                   'disk': t[2],
                   'net': t[3],
                   'n': 1
-             } for i,t in islice(enumerate(trace), 200)]
+             } for i,t in islice(enumerate(trace), 288)]
 #print items
 #'cpu': 2*sin(i) + 3, 'n':  1 if i < N/3 else 2 if i < 2*N/3 else 3} for i in range(N)]
 #items = [
