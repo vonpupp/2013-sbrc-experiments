@@ -18,7 +18,7 @@ def gen_vms():
     global items
     tg = tracegen.TraceGenerator()
     trace = tg.gen_trace()
-    items = [{
+    items = [(i, {
                   'name': 'item %d' % i,
 #                  'weight': 1.5*(cos(i)+1)**2,
                   'weight': 1,
@@ -27,7 +27,7 @@ def gen_vms():
                   'disk': t[2],
                   'net': t[3],
                   'n': 1
-             } for i,t in islice(enumerate(trace), 200)]
+             }) for i,t in islice(enumerate(trace), 200)]
 
 def add_constraint(values, constraint):
     return values[constraint] < 99
@@ -47,7 +47,7 @@ def my_evaluator(candidate, args):
     print('candidate: {}'.format(candidate))
     print('args: {}'.format(args))
 #    values = list(candidate)
-    from pudb import set_trace; set_trace()
+    #from pudb import set_trace; set_trace()
 #    values_sum = sum([trail.value for trail in candidate])
 #    print('values_sum: {}'.format(values_sum))
 #    return values_sum
