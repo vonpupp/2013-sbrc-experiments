@@ -1,2 +1,2 @@
-inspired
+inspyred
 pudb
