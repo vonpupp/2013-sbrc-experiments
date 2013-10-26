@@ -523,13 +523,15 @@ def clear_prof_data():
 class Simulator:
     def __init__(self):
         self.results = []
+        self.writer = None
     
-    def csv_writer(self, fout):
-        out_file = open(fout, 'wb')
+    def csv_write_simulation(self, fout):
+        self.out_file = open(fout, 'wb')
+        #out_file = open(fout, 'a+')
         
         #fieldnames = list(set(k for d in self.results for k in d))
         #writer = csv.DictWriter(out_file, fieldnames=fieldnames, dialect='excel')
-        writer = csv.writer(out_file, delimiter='\t')
+        self.writer = csv.writer(self.out_file, delimiter='\t')
         #csvhdlr = csv.writer(fh, delimiter='\t')#, quotechar='"')#, quoting=csv.QUOTE_MINIMAL)
         #result['physical_mahines_count'] = pms
         #result['virtual_mahines_count'] = vms
@@ -554,15 +556,20 @@ class Simulator:
                   #'ST', 'ET',
                   'T']
         #writer.writeheader()
-        writer.writerow(header)
-        for r in self.results:
-            writer.writerow([r['physical_mahines_count'], r['virtual_mahines_count'], r['energy_consumed'],
-                  r['physical_machines_used'], r['physical_machines_idle'],
-                  r['virtual_machines_placed'], r['virtual_machines_unplaced'],
-                  r['strategy'].__class__.__name__,
-                  #r['start_time'], r['end_time'],
-                  r['elapsed_time']])
-        out_file.close()
+        self.writer.writerow(header)
+        
+    def csv_append_scenario(self, scenario):
+        #for r in self.results:
+        r = self.results[scenario]
+        self.writer.writerow([r['physical_mahines_count'], r['virtual_mahines_count'], r['energy_consumed'],
+              r['physical_machines_used'], r['physical_machines_idle'],
+              r['virtual_machines_placed'], r['virtual_machines_unplaced'],
+              r['strategy'].__class__.__name__,
+              #r['start_time'], r['end_time'],
+              r['elapsed_time']])
+        
+    def csv_close_simulation(self):
+        self.out_file.close()
         
     def pickle_writer(self, fout):
         try:
@@ -597,10 +604,12 @@ class Simulator:
         stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d-%H%M%S')
         #strategy = EnergyUnawareStrategyPlacement()
         for pms in pms_scenarios:
+            self.csv_write_simulation('results/{}-{}-{}.csv'.format(strategy.__class__.__name__, pms, stamp))
             for vms in vms_scenarios:
-                instance = self.simulate_scenario(strategy, pms, vms)
-            self.csv_writer('results/{}-{}-{}.csv'.format(strategy.__class__.__name__, pms, stamp))
-            self.pickle_writer('results/{}-{}-{}.pkl'.format(strategy.__class__.__name__, pms, stamp))
+                scenario = self.simulate_scenario(strategy, pms, vms)
+                self.csv_append_scenario(scenario)
+            self.csv_close_simulation()
+        self.pickle_writer('results/pickle-{}.pkl'.format(stamp))
 
 if __name__ == "__main__":
 #    vmm = VMManager()
