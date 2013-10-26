@@ -7,7 +7,8 @@ import lib.tracegen.tracegen as tracegen
 from itertools import islice
 import uuid
 from operator import attrgetter
-import timeit
+import random
+import operator
 
 
 class VirtualMachine(dict):
@@ -229,6 +230,57 @@ class OpenOptStrategyPlacement:
         return result
 #        return 10
 
+
+class EnergyUnawareStrategyPlacement:
+    def __init__(self):
+        self.constraints = None
+        self.items = None
+        self.vmm = None
+        self.pmm = None
+        self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
+
+    def gen_costraints(self, constraint_list):
+        self.constraints = lambda values: (
+            add_constraints(values, constraint_list)
+        )
+    
+    def check_constraints(self, item_list):
+        total_cpu = sum(map(operator.itemgetter('cpu'), item_list))
+        total_mem = sum(map(operator.itemgetter('mem'), item_list))
+        total_disk = sum(map(operator.itemgetter('disk'), item_list))
+        total_net = sum(map(operator.itemgetter('net'), item_list))
+        return (total_cpu < 100) and (total_mem < 100) and \
+            (total_disk < 100) and (total_net < 100)
+
+    def get_vm_objects(self, items_list):
+        result = []
+        for item in items_list:
+            result += [self.vmm.items[item]]#get_item_values(item)]
+        return result
+      
+    def set_vmm(self, vmm):
+        self.vmm = vmm
+        self.items = self.vmm.items
+
+    def solve_host(self):
+        result = []
+        test = False
+        r = range(len(self.vmm.items))
+        s = set(r)
+        while not test:
+            r = random.sample(s, 1)[0]
+            #r = random.randint(0, len(self.vmm.items))
+            vm = self.vmm.items[r]
+            print('random: {} ({})'.format(r, vm))
+            test = self.check_constraints(result + [vm.value])
+            #test = self.constraints(result + [vm.value])
+            #print('test: {}'.format(test))
+            if test:
+                print('Adding: {}'.format(vm))
+                result += [r]
+        return result
+
+
 class Manager:
     def __init__(self):
         self.placement = []
@@ -293,22 +345,72 @@ class Manager:
     def solve_hosts(self):
         #placement = []
         for host in self.pmm.items: #range(self.total_pm):
-            solution = self.strategy.solve_host()
-            #print('solution: {}'.format(solution.xf))
-            #print('Manager self.vmm: {}'.format(self.vmm))
-            vms = self.strategy.get_vm_objects(solution)
-            #placement.append(vms)
-            if vms is not None:
-                self.place_vms(vms, host)
-                #print('assignment: {}'.format(host))
-                #print('left: {}'.format(self.vmm))
-                #self.remove_placed_vms()
+            if self.vmm.items != []:
+                solution = self.strategy.solve_host()
+                #print('solution: {}'.format(solution.xf))
+                #print('Manager self.vmm: {}'.format(self.vmm))
+                vms = self.strategy.get_vm_objects(solution)
+                #placement.append(vms)
+                if vms is not None:
+                    self.place_vms(vms, host)
+                    #print('assignment: {}'.format(host))
+                    #print('left: {}'.format(self.vmm))
+                    #self.remove_placed_vms()
         #return placement
 
     def calculate_power_consumed(self):
         result = 0
         for host in self.pmm.items:
             result += host.estimate_consumed_power()
+        return result
+    
+    def calculate_physical_hosts_used(self):
+        result = 0
+        for host in self.pmm.items:
+            if host.vms != []:
+                result += 1
+        return result
+    
+    def calculate_physical_hosts_idle(self):
+        result = 0
+        for host in self.pmm.items:
+            if host.vms == []:
+                result += 1
+        return result
+
+import time
+from functools import wraps
+
+PROF_DATA = {}
+
+def profile(fn):
+    @wraps(fn)
+    def with_profiling(*args, **kwargs):
+        start_time = time.time()
+
+        ret = fn(*args, **kwargs)
+
+        elapsed_time = time.time() - start_time
+
+        if fn.__name__ not in PROF_DATA:
+            PROF_DATA[fn.__name__] = [0, []]
+        PROF_DATA[fn.__name__][0] += 1
+        PROF_DATA[fn.__name__][1].append(elapsed_time)
+
+        return ret
+
+    return with_profiling
+
+def print_prof_data():
+    for fname, data in PROF_DATA.items():
+        max_time = max(data[1])
+        avg_time = sum(data[1]) / len(data[1])
+        print "Function %s called %d times. " % (fname, data[0]),
+        print 'Execution time max: %.3f, average: %.3f' % (max_time, avg_time)
+
+def clear_prof_data():
+    global PROF_DATA
+    PROF_DATA = {}
 
 if __name__ == "__main__":
 #    vmm = VMManager()
@@ -316,33 +418,42 @@ if __name__ == "__main__":
 #    m = Manager(strategy)
     
     
+    start_time = time.time()
     m = Manager()
     #m.set_trace_file('blabla')
-    m.set_pm_count(2)
-    m.set_vm_count(288)
+    m.set_pm_count(10)
+    m.set_vm_count(10)
     s = OpenOptStrategyPlacement()
     m.set_strategy(s)
     m.solve_hosts()
-    p = m.calculate_power_consumed()
-#    uh = m.calculate_physical_hosts_used()
-#    ih = m.calculate_physical_hosts_idle()
-#    t = m.calculate_time_elapsed()
+    p1 = m.calculate_power_consumed()
+    print(p1)
+    uh = m.calculate_physical_hosts_used()
+    print(uh)
+    ih = m.calculate_physical_hosts_idle()
+    print(ih)
+    elapsed_time = time.time() - start_time
+    print(elapsed_time)
+
+    start_time = time.time()
+    m = Manager()
+    #m.set_trace_file('blabla')
+    m.set_pm_count(10)
+    m.set_vm_count(10)
+    s = EnergyUnawareStrategyPlacement()
+    m.set_strategy(s)
+    m.solve_hosts()
+    p2 = m.calculate_power_consumed()
+    print(p2)
+    uh = m.calculate_physical_hosts_used()
+    print(uh)
+    ih = m.calculate_physical_hosts_idle()
+    print(ih)
+    elapsed_time = time.time() - start_time
+    print(elapsed_time)
+    #t = m.calculate_time_elapsed()
     
-#    m = Manager()
-#    m.strategy = NoEnergyAwareStrategyPlacement(288, 288)
-#    m.solve_hosts()
-#    m.calculate_placement_power()
-#    h = m.calculate_physical_hosts_number()
     
-#    print(m)
-#    print(m.vmm.items)
-#    for vm in vmm.items:
-#        print('{}'.format(vm.value['cpu']))
-#        print('{}'.format(vm.value['n']))
-        #print('{}'.format(vm['mem']))
-        #print('{}'.format(vm['disk']))
-        #print('{}'.format(vm['net']))
-#        pass
-#    placement = strategy.solve_host()
-#    placement = strategy.solve_hosts()
-    #my_multi_bpp_place()
+    print(p1)
+    print(p2)
+    print(p1/p2*100)
