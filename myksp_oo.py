@@ -1,14 +1,16 @@
 #!/usr/bin/python
 # vim:ts=4:sts=4:sw=4:et:wrap:ai:fileencoding=utf-8:
 
-import json
-from openopt import *
-import lib.tracegen.tracegen as tracegen
-from itertools import islice
-import uuid
-from operator import attrgetter
+#import json
 import random
+import uuid
+from itertools import islice
+#from operator import attrgetter
 import operator
+
+import lib.tracegen.tracegen as tracegen
+from openopt import *
+import inspyred
 
 
 class VirtualMachine(dict):
@@ -284,6 +286,101 @@ class EnergyUnawareStrategyPlacement:
         return result
 
 
+def my_generator(random, args):
+    items = args['items']
+    #print items
+    return [random.choice([0]*99 + [1]) for _ in range(len(items))]
+
+@inspyred.ec.evaluators.evaluator
+def my_evaluator(candidate, args):
+    items = args['items']
+    totals = {}
+    for metric in ['weight', 'cpu', 'mem', 'disk', 'net']:
+        totals[metric] = sum([items[i][1][metric] for i, c in enumerate(candidate) if c == 1])
+    constraints = [max(0, totals[c] - 99) for c in ['cpu', 'mem', 'disk', 'net']]
+    fitness = totals['weight'] - sum(constraints)
+    #print fitness
+    return fitness
+
+class EvolutionaryComputationStrategyPlacement:
+    def __init__(self):
+        self.constraints = None
+        self.items = None
+        self.itemstuples = None
+        self.vmm = None
+        self.pmm = None
+        #self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
+
+    def gen_vms(self):
+        self.itemstuples = [(i, {
+                      'name': 'item %d' % i,
+                      'weight': 1,
+                      'cpu': vm.value['cpu'],
+                      'mem': vm.value['mem'],
+                      'disk': vm.value['disk'],
+                      'net': vm.value['net'],
+                      'n': 1
+                 }) for i, vm in enumerate(self.items)]
+        return self.itemstuples
+
+    #def check_constraints(self, item_list):
+    #    total_cpu = sum(map(operator.itemgetter('cpu'), item_list))
+    #    total_mem = sum(map(operator.itemgetter('mem'), item_list))
+    #    total_disk = sum(map(operator.itemgetter('disk'), item_list))
+    #    total_net = sum(map(operator.itemgetter('net'), item_list))
+    #    return (total_cpu < 100) and (total_mem < 100) and \
+    #        (total_disk < 100) and (total_net < 100)
+    #
+    def get_vm_objects(self, items_list):
+        result = []
+        for item in items_list:
+            result += [self.vmm.items[item]]#get_item_values(item)]
+        return result
+      
+    def set_vmm(self, vmm):
+        self.vmm = vmm
+        self.items = self.vmm.items
+
+    def solve_host(self):
+        prng = random.Random()
+        prng.seed(time.time())
+        
+        itemstuples = self.gen_vms()
+        ##items = fake_gen_vms(prng)  # gen_vms()
+        #items = gen_vms()
+        ##print(items)
+        ##raw_input('...')
+        
+        psize = 50
+        tsize = 25
+        evals = 2500
+        
+        ea = inspyred.ec.EvolutionaryComputation(prng)
+        ea.selector = inspyred.ec.selectors.tournament_selection
+        ea.variator = [inspyred.ec.variators.n_point_crossover, inspyred.ec.variators.bit_flip_mutation]
+        ea.replacer = inspyred.ec.replacers.generational_replacement
+        #ea.observer = inspyred.ec.observers.stats_observer
+        ea.terminator = inspyred.ec.terminators.evaluation_termination
+        final_pop = ea.evolve(my_generator, my_evaluator,
+                              bounder=inspyred.ec.DiscreteBounder([0, 1]),
+                              maximize=True,
+                              pop_size=psize,
+                              tournament_size=tsize,
+                              num_selected=psize,
+                              num_crossover_points=1,
+                              num_elites=1,
+                              max_evaluations=evals,
+                              items=itemstuples
+                              )
+    
+        best = max(final_pop)
+        #print(best.fitness)
+        result = [i for i, c in enumerate(best.candidate) if c == 1]
+        #print result
+        return result
+        #print(', '.join(['item {}'.format(i) for i, c in enumerate(best.candidate) if c == 1]))
+
+
 class Manager:
     def __init__(self):
         self.placement = []
@@ -423,26 +520,25 @@ if __name__ == "__main__":
     pms = 10
     vms = 10
     
+    #start_time = time.time()
+    #m = Manager()
+    ##m.set_trace_file('blabla')
+    #m.set_pm_count(pms)
+    #m.set_vm_count(vms)
+    #s = OpenOptStrategyPlacement()
+    #m.set_strategy(s)
+    #m.solve_hosts()
+    #p1 = m.calculate_power_consumed()
+    #print(p1)
+    #uh = m.calculate_physical_hosts_used()
+    #print(uh)
+    #ih = m.calculate_physical_hosts_idle()
+    #print(ih)
+    #elapsed_time = time.time() - start_time
+    #print(elapsed_time)
+    #
     start_time = time.time()
     m = Manager()
-    #m.set_trace_file('blabla')
-    m.set_pm_count(pms)
-    m.set_vm_count(vms)
-    s = OpenOptStrategyPlacement()
-    m.set_strategy(s)
-    m.solve_hosts()
-    p1 = m.calculate_power_consumed()
-    print(p1)
-    uh = m.calculate_physical_hosts_used()
-    print(uh)
-    ih = m.calculate_physical_hosts_idle()
-    print(ih)
-    elapsed_time = time.time() - start_time
-    print(elapsed_time)
-
-    start_time = time.time()
-    m = Manager()
-    #m.set_trace_file('blabla')
     m.set_pm_count(pms)
     m.set_vm_count(vms)
     s = EnergyUnawareStrategyPlacement()
@@ -457,11 +553,27 @@ if __name__ == "__main__":
     elapsed_time = time.time() - start_time
     print(elapsed_time)
     #t = m.calculate_time_elapsed()
+
+    start_time = time.time()
+    m = Manager()
+    m.set_pm_count(pms)
+    m.set_vm_count(vms)
+    s = EvolutionaryComputationStrategyPlacement()
+    m.set_strategy(s)
+    m.solve_hosts()
+    p3 = m.calculate_power_consumed()
+    print(p3)
+    uh = m.calculate_physical_hosts_used()
+    print(uh)
+    ih = m.calculate_physical_hosts_idle()
+    print(ih)
+    elapsed_time = time.time() - start_time
+    print(elapsed_time)
+    #t = m.calculate_time_elapsed()
     
-    
-    print(p1)
-    print(p2)
-    print(100 - p1/p2*100)
+    #print(p1)
+    #print(p2)
+    #print(100 - p1/p2*100)
     
     
 #288
