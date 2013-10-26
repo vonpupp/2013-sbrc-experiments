@@ -7,6 +7,9 @@ import uuid
 from itertools import islice
 #from operator import attrgetter
 import operator
+import datetime
+import csv
+import pickle
 
 import lib.tracegen.tracegen as tracegen
 from openopt import *
@@ -15,10 +18,10 @@ import inspyred
 
 class VirtualMachine(dict):
     __count__ = 0
-    def __init__(self, cpu, mem, disk, net):
-        id = uuid.uuid1()
+    def __init__(self, id, cpu, mem, disk, net):
+        #id = uuid.uuid1()
         self.value = {}
-        self.id = '%d' % VirtualMachine.__count__
+        self.id = '%d' % id #VirtualMachine.__count__
         #self.id = str(id)[4:8] #'%d' % VirtualMachine.__count__
         self.value['weight'] = 1
         self.value['cpu'] = cpu
@@ -54,10 +57,13 @@ class VMManager:
     def __init__(self, total_vm):
         tg = tracegen.TraceGenerator()
         trace = tg.gen_trace()
-        self.items = [VirtualMachine(t[0], t[1], t[2], t[3])
-                          for i, t in islice(enumerate(trace), total_vm)]
-        self.vms_list = [VirtualMachine(t[0], t[1], t[2], t[3])
-                          for i, t in islice(enumerate(trace), total_vm)]
+        self.items = []
+        for t in islice(enumerate(trace), total_vm):
+            self.items += [VirtualMachine(t[0], t[1][0], t[1][1], t[1][2], t[1][3])]
+#        self.items = [VirtualMachine(i, t[1][0], t[1][1], t[1][2], t[1][3])
+#                          for i, t in enumerate(islice(enumerate(trace), total_vm))]
+#        self.vms_list = [VirtualMachine(t[0], t[1], t[2], t[3])
+#                          for i, t in islice(enumerate(trace), total_vm)]
 
     def get_item_index(self, id):
         result = -1
@@ -102,8 +108,8 @@ class VMManager:
 
 class PhysicalMachine:
     __count__ = 0
-    def __init__(self):
-        self.id = '%d' % self.__count__
+    def __init__(self, id):
+        self.id = '%d' % id # self.__count__
         self.vms = []
         self.cpu = self.mem = 0
         self.disk = self.net = 0
@@ -153,11 +159,15 @@ class PhysicalMachine:
 
 class PMManager:
     def __init__(self, total_pm):
-        self.items = [PhysicalMachine()
+        self.items = [PhysicalMachine(i)
                           for i in range(total_pm)]
 
     def __str__(self):
-        pass
+        result = 'PMPool['
+        for item in self.items:
+            result += str(item) + ', '
+        result += ']'
+        return result
 
 def gen_costraint(self, values, constraint):
     return values.value[constraint] < 99
@@ -276,12 +286,12 @@ class EnergyUnawareStrategyPlacement:
             r = random.sample(s, 1)[0]
             #r = random.randint(0, len(self.vmm.items))
             vm = self.vmm.items[r]
-            print('random: {} ({})'.format(r, vm))
+            #print('random: {} ({})'.format(r, vm))
             test = self.check_constraints(result + [vm.value])
             #test = self.constraints(result + [vm.value])
             #print('test: {}'.format(test))
             if test:
-                print('Adding: {}'.format(vm))
+                #print('Adding: {}'.format(vm))
                 result += [r]
         return result
 
@@ -432,16 +442,14 @@ class Manager:
             #vm.value['placed'] = int(host.id)
 
     def placed_vms(self):
-        pass
+        result = 0
+        for host in self.pmm.items:
+            result += len(host.vms)
+        return result
       
     def unplaced_vms(self):
-        pass
+        return self.total_vm - self.placed_vms()
       
-#    def remove_placed_vms(self):
-#        for vm in self.vmm.items:
-#            if vm.value['placed'] == 1:
-#                self.vmm.items.remove(vm)
-
     def solve_hosts(self):
         #placement = []
         for host in self.pmm.items: #range(self.total_pm):
@@ -457,7 +465,7 @@ class Manager:
                     #print('left: {}'.format(self.vmm))
                     #self.remove_placed_vms()
         #return placement
-
+        
     def calculate_power_consumed(self):
         result = 0
         for host in self.pmm.items:
@@ -512,71 +520,189 @@ def clear_prof_data():
     global PROF_DATA
     PROF_DATA = {}
 
+class Simulator:
+    def __init__(self):
+        self.results = []
+    
+    def csv_writer(self, fout):
+        out_file = open(fout, 'wb')
+        
+        #fieldnames = list(set(k for d in self.results for k in d))
+        #writer = csv.DictWriter(out_file, fieldnames=fieldnames, dialect='excel')
+        writer = csv.writer(out_file, delimiter='\t')
+        #csvhdlr = csv.writer(fh, delimiter='\t')#, quotechar='"')#, quoting=csv.QUOTE_MINIMAL)
+        #result['physical_mahines_count'] = pms
+        #result['virtual_mahines_count'] = vms
+        #result['energy_consumed'] = m.calculate_power_consumed()
+        #result['physical_machines_used'] = m.calculate_physical_hosts_used()
+        #result['physical_machines_idle'] = m.calculate_physical_hosts_idle()
+        #result['virtual_machines_placed']
+        #result['virtual_machines_unplaced']
+        #result['strategy'] = strategy
+        #result['start_time'] = time.time()
+        #result['end_time'] = time.time()
+        #result['elapsed_time']
+        #header = ['physical_mahines_count', 'virtual_mahines_count', 'energy_consumed',
+        #          'physical_machines_used', 'physical_machines_idle',
+        #          #'virtual_machines_placed', 'virtual_machines_unplaced',
+        #          'strategy',
+        #          'start_time', 'end_time', 'elapsed_time']
+        header = ['#PM', '#VM', 'KW',
+                  '#PM-U', '#PM-I',
+                  '#VM-P', 'VM-U',
+                  'strategy',
+                  #'ST', 'ET',
+                  'T']
+        #writer.writeheader()
+        writer.writerow(header)
+        for r in self.results:
+            writer.writerow([r['physical_mahines_count'], r['virtual_mahines_count'], r['energy_consumed'],
+                  r['physical_machines_used'], r['physical_machines_idle'],
+                  r['virtual_machines_placed'], r['virtual_machines_unplaced'],
+                  r['strategy'].__class__.__name__,
+                  #r['start_time'], r['end_time'],
+                  r['elapsed_time']])
+        out_file.close()
+        
+    def pickle_writer(self, fout):
+        try:
+            out_file = open(fout, 'wb')
+            pickle.dump(self.results, out_file)
+        except:
+            pass
+        
+    def simulate_scenario(self, strategy, pms, vms):
+        result = {}
+        result['start_time'] = time.time()
+        result['manager'] = m = Manager()
+        result['physical_mahines_count'] = pms
+        m.set_pm_count(pms)
+        result['virtual_mahines_count'] = vms
+        m.set_vm_count(vms)
+        result['strategy'] = strategy
+        m.set_strategy(strategy)
+        m.solve_hosts()
+        result['placement'] = m.pmm
+        result['energy_consumed'] = m.calculate_power_consumed()
+        result['physical_machines_used'] = m.calculate_physical_hosts_used()
+        result['physical_machines_idle'] = m.calculate_physical_hosts_idle()
+        result['virtual_machines_placed'] = m.placed_vms()
+        result['virtual_machines_unplaced'] = m.unplaced_vms()
+        result['end_time'] = time.time()
+        result['elapsed_time'] = result['end_time'] - result['start_time']
+        self.results.append(result)
+        return len(self.results)-1
+
+    def simulate_strategy(self, strategy, pms_scenarios, vms_scenarios):
+        stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d-%H%M%S')
+        #strategy = EnergyUnawareStrategyPlacement()
+        for pms in pms_scenarios:
+            for vms in vms_scenarios:
+                instance = self.simulate_scenario(strategy, pms, vms)
+            self.csv_writer('results/{}-{}-{}.csv'.format(strategy.__class__.__name__, pms, stamp))
+            self.pickle_writer('results/{}-{}-{}.pkl'.format(strategy.__class__.__name__, pms, stamp))
+
 if __name__ == "__main__":
 #    vmm = VMManager()
 #    strategy = OpenOptStrategyPlacement(vmm, 2)
 #    m = Manager(strategy)
     
-    pms = 10
+    pms = 2
+    vms = 10
+    s = Simulator()
+    
+    #pms_scenarios = range(10, 110, 10)
+    #vms_scenarios = range(16, 304, 16)
+    
+    pms_scenarios = range(20, 50, 10)
+    vms_scenarios = range(16, 64, 16)
+    
+    strategy = EnergyUnawareStrategyPlacement()
+    s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
+    
+    strategy = OpenOptStrategyPlacement()
+    s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
+    
+    #for pms in pms_scenarios:
+    #    for vms in vms_scenarios:
+    #        s.simulate_scenario(strategy, pms, vms)
+    #s.csv_writer('results/{}-{}.csv'.format(strategy.__class__.__name__, stamp))
+    #s.pickle_writer('results/{}-{}.pkl'.format(strategy.__class__.__name__, stamp))
+    
+    #strategy = OpenOptStrategyPlacement()
+    #s.simulate(strategy, pms, vms)
+    
+    #strategy = EvolutionaryComputationStrategyPlacement()
+    #s.simulate(strategy, pms, vms)
+    
     vms = 10
     
-    #start_time = time.time()
-    #m = Manager()
-    ##m.set_trace_file('blabla')
-    #m.set_pm_count(pms)
-    #m.set_vm_count(vms)
-    #s = OpenOptStrategyPlacement()
-    #m.set_strategy(s)
-    #m.solve_hosts()
-    #p1 = m.calculate_power_consumed()
-    #print(p1)
-    #uh = m.calculate_physical_hosts_used()
-    #print(uh)
-    #ih = m.calculate_physical_hosts_idle()
-    #print(ih)
-    #elapsed_time = time.time() - start_time
-    #print(elapsed_time)
+    #st1 = time.time()
+    #m1 = Manager()
+    #m1.set_pm_count(pms)
+    #m1.set_vm_count(vms)
+    #s = EnergyUnawareStrategyPlacement()
+    #m1.set_strategy(s)
+    #m1.solve_hosts()
+    #p1 = m1.pmm
+    #e1 = m1.calculate_power_consumed()
+    #print(e1)
+    #uh1 = m1.calculate_physical_hosts_used()
+    #print(uh1)
+    #ih1 = m1.calculate_physical_hosts_idle()
+    #print(ih1)
+    #et1 = time.time() - st1
+    #print(et1)
+    ##t = m.calculate_time_elapsed()
     #
-    start_time = time.time()
-    m = Manager()
-    m.set_pm_count(pms)
-    m.set_vm_count(vms)
-    s = EnergyUnawareStrategyPlacement()
-    m.set_strategy(s)
-    m.solve_hosts()
-    p2 = m.calculate_power_consumed()
-    print(p2)
-    uh = m.calculate_physical_hosts_used()
-    print(uh)
-    ih = m.calculate_physical_hosts_idle()
-    print(ih)
-    elapsed_time = time.time() - start_time
-    print(elapsed_time)
-    #t = m.calculate_time_elapsed()
-
-    start_time = time.time()
-    m = Manager()
-    m.set_pm_count(pms)
-    m.set_vm_count(vms)
-    s = EvolutionaryComputationStrategyPlacement()
-    m.set_strategy(s)
-    m.solve_hosts()
-    p3 = m.calculate_power_consumed()
-    print(p3)
-    uh = m.calculate_physical_hosts_used()
-    print(uh)
-    ih = m.calculate_physical_hosts_idle()
-    print(ih)
-    elapsed_time = time.time() - start_time
-    print(elapsed_time)
-    #t = m.calculate_time_elapsed()
+    #st2 = time.time()
+    #m2 = Manager()
+    ##m.set_trace_file('blabla')
+    #m2.set_pm_count(pms)
+    #m2.set_vm_count(vms)
+    #s = OpenOptStrategyPlacement()
+    #m2.set_strategy(s)
+    #m2.solve_hosts()
+    #p2 = m2.pmm
+    #e2 = m2.calculate_power_consumed()
+    #print(e2)
+    #uh2 = m2.calculate_physical_hosts_used()
+    #print(uh2)
+    #ih2 = m2.calculate_physical_hosts_idle()
+    #print(ih2)
+    #et2 = time.time() - st2
+    #print(et2)
+    #
+    #st3 = time.time()
+    #m3 = Manager()
+    #m3.set_pm_count(pms)
+    #m3.set_vm_count(vms)
+    #s = EvolutionaryComputationStrategyPlacement()
+    #m3.set_strategy(s)
+    #m3.solve_hosts()
+    #p3 = m3.pmm
+    #e3 = m3.calculate_power_consumed()
+    #print(e3)
+    #uh3 = m3.calculate_physical_hosts_used()
+    #print(uh3)
+    #ih3 = m3.calculate_physical_hosts_idle()
+    #print(ih3)
+    #et3 = time.time() - st3
+    #print(et3)
+    ##t = m.calculate_time_elapsed()
     
     #print(p1)
     #print(p2)
     #print(100 - p1/p2*100)
     
-    
-#288
-#44463.72
-#51330.72
-#13.3779537867
+# OpenOpt
+#15793.08
+#81
+#19
+#4.81501793861
+#
+# Inspyred
+#15684.08
+#80
+#20
+#37.2569041252
