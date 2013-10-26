@@ -127,14 +127,22 @@ class PhysicalMachine:
         return result
     
     def __str__(self):
-        result = 'PM[{}/{}]({}, {}, {}, {}) | [{}]'.format(
+        result = 'PM[{}/{}/{}]({}, {}, {}, {}) | [{}]'.format(
             self.id,
             len(self.vms),
+            self.estimate_consumed_power(),
             self.cpu,
             self.mem,
             self.disk,
             self.net,
             self.vms_to_str())
+        return result
+    
+    def estimate_consumed_power(self):
+        # P(cpu) = P_idle + (P_busy - P_idle) x cpu
+        p_idle = 114.0
+        p_busy = 250.0
+        result = p_idle + (p_busy - p_idle) * self.cpu/100
         return result
 
 class PMManager:
@@ -221,13 +229,6 @@ class OpenOptStrategyPlacement:
         return result
 #        return 10
 
-#    def items_remove(remove_list):
-#        global items
-#        for to_delete in remove_list:
-#            i = get_item_index(to_delete)
-#            if i is not -1:
-#                del items[i]
-
 class Manager:
     def __init__(self):
         self.placement = []
@@ -305,7 +306,9 @@ class Manager:
         #return placement
 
     def calculate_power_consumed(self):
-        pass
+        result = 0
+        for host in self.pmm.items:
+            result += host.estimate_consumed_power()
 
 if __name__ == "__main__":
 #    vmm = VMManager()
@@ -320,7 +323,7 @@ if __name__ == "__main__":
     s = OpenOptStrategyPlacement()
     m.set_strategy(s)
     m.solve_hosts()
-    #p = m.calculate_power_consumed()
+    p = m.calculate_power_consumed()
 #    uh = m.calculate_physical_hosts_used()
 #    ih = m.calculate_physical_hosts_idle()
 #    t = m.calculate_time_elapsed()
