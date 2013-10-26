@@ -140,10 +140,13 @@ class PhysicalMachine:
         return result
     
     def estimate_consumed_power(self):
-        # P(cpu) = P_idle + (P_busy - P_idle) x cpu
-        p_idle = 114.0
-        p_busy = 250.0
-        result = p_idle + (p_busy - p_idle) * self.cpu/100
+        if self.vms != []:
+            # P(cpu) = P_idle + (P_busy - P_idle) x cpu
+            p_idle = 114.0
+            p_busy = 250.0
+            result = p_idle + (p_busy - p_idle) * self.cpu/100
+        else:
+            result = 5
         return result
 
 class PMManager:
@@ -417,12 +420,14 @@ if __name__ == "__main__":
 #    strategy = OpenOptStrategyPlacement(vmm, 2)
 #    m = Manager(strategy)
     
+    pms = 10
+    vms = 10
     
     start_time = time.time()
     m = Manager()
     #m.set_trace_file('blabla')
-    m.set_pm_count(10)
-    m.set_vm_count(10)
+    m.set_pm_count(pms)
+    m.set_vm_count(vms)
     s = OpenOptStrategyPlacement()
     m.set_strategy(s)
     m.solve_hosts()
@@ -438,8 +443,8 @@ if __name__ == "__main__":
     start_time = time.time()
     m = Manager()
     #m.set_trace_file('blabla')
-    m.set_pm_count(10)
-    m.set_vm_count(10)
+    m.set_pm_count(pms)
+    m.set_vm_count(vms)
     s = EnergyUnawareStrategyPlacement()
     m.set_strategy(s)
     m.solve_hosts()
@@ -456,4 +461,10 @@ if __name__ == "__main__":
     
     print(p1)
     print(p2)
-    print(p1/p2*100)
+    print(100 - p1/p2*100)
+    
+    
+#288
+#44463.72
+#51330.72
+#13.3779537867
