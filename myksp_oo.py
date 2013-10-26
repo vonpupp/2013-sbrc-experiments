@@ -13,9 +13,10 @@ import timeit
 class VirtualMachine(dict):
     __count__ = 0
     def __init__(self, cpu, mem, disk, net):
-        #id = uuid.uuid1()
+        id = uuid.uuid1()
         self.value = {}
         self.id = '%d' % VirtualMachine.__count__
+        #self.id = str(id)[4:8] #'%d' % VirtualMachine.__count__
         self.value['weight'] = 1
         self.value['cpu'] = cpu
         self.value['mem'] = mem
@@ -52,8 +53,8 @@ class VMManager:
         trace = tg.gen_trace()
         self.items = [VirtualMachine(t[0], t[1], t[2], t[3])
                           for i, t in islice(enumerate(trace), total_vm)]
-#        self.vms_list = [VirtualMachine(t[0], t[1], t[2], t[3])
-#                          for i, t in islice(enumerate(trace), total_vm)]
+        self.vms_list = [VirtualMachine(t[0], t[1], t[2], t[3])
+                          for i, t in islice(enumerate(trace), total_vm)]
 
     def get_item_index(self, id):
         result = -1
@@ -63,7 +64,7 @@ class VMManager:
             item = self.items[i]
             j = item.id #int(item['name'].split()[1])
 #           print('  get_item_index={} j={}'.format(id, j))
-            found = j == id
+            found = j == id.id
             if found:
                 result = i
             i += 1
@@ -80,8 +81,11 @@ class VMManager:
     def items_remove(self, remove_list):
         for to_delete in remove_list:
             i = self.get_item_index(to_delete)
+            #self.items.remove(to_delete)
             if i is not -1:
-                self.items.remove(i)
+                del self.items[i]
+                #value = self.items[i]
+                #self.items.remove(value)
 
     def __str__(self):
         result = 'VMPool['
@@ -197,14 +201,14 @@ class OpenOptStrategyPlacement:
         #test = self.vmm.get_item_values('5')
         for item in items_list.xf:
             # i = int(item.split()[1])
-            result += [self.vmm.get_item_values(str(item))]
+            result += [self.vmm.items[item]]#get_item_values(item)]
             #print('result: {}'.format(result))
         return result
       
     def set_vmm(self, vmm):
         self.vmm = vmm
         self.items = self.vmm.items
-        print('OpenOptStrategyPlacement set_vmm: {}'.format(self.vmm))
+        #print('OpenOptStrategyPlacement set_vmm: {}'.format(self.vmm))
 
     def solve_host(self):
         #print(list(self.items))
@@ -212,7 +216,7 @@ class OpenOptStrategyPlacement:
 #        print(self.constraints)
         p = KSP('weight', self.items, constraints = self.constraints)
         result = p.solve('glpk', iprint = -1)
-        print('solve_host result: {}'.format(result.xf))
+        #print('solve_host result: {}'.format(result.xf))
         #print('solve_host result: {}'.format(result.xf[0]))
         return result
 #        return 10
@@ -243,7 +247,7 @@ class Manager:
     def set_vm_count(self, total_vm):
         self.total_vm = total_vm
         self.vmm = VMManager(total_vm)
-        print('1 Manager self.vmm: {}'.format(self.vmm))
+        #print('1 Manager self.vmm: {}'.format(self.vmm))
 
     def set_pm_count(self, total_pm):
         self.total_pm = total_pm
@@ -260,8 +264,10 @@ class Manager:
         #host.vms = vms
         i = 0
         while i < len(vms):
-            vm = self.vmm.items[i]
+            #vm = self.vmm.items[i]
+            vm = vms[i]
             host.place_vm(vm)
+            print('{}'.format(host))
             #self.vmm.items.remove(vm)
             i += 1
         self.vmm.items_remove(vms)
@@ -293,8 +299,8 @@ class Manager:
             #placement.append(vms)
             if vms is not None:
                 self.place_vms(vms, host)
-                print('assignment: {}'.format(host))
-                print('left: {}'.format(self.vmm))
+                #print('assignment: {}'.format(host))
+                #print('left: {}'.format(self.vmm))
                 #self.remove_placed_vms()
         #return placement
 
@@ -310,7 +316,7 @@ if __name__ == "__main__":
     m = Manager()
     #m.set_trace_file('blabla')
     m.set_pm_count(2)
-    m.set_vm_count(6)
+    m.set_vm_count(288)
     s = OpenOptStrategyPlacement()
     m.set_strategy(s)
     m.solve_hosts()
