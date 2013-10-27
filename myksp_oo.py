@@ -215,6 +215,56 @@ def add_constraints(values, constraint_list):
 #    global constraints
 #    constraints = lambda values: (add_constraints(values, constraint_list))
 
+class EnergyUnawareStrategyPlacement:
+    def __init__(self):
+        self.constraints = None
+        self.items = None
+        self.vmm = None
+        self.pmm = None
+        self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
+
+    def gen_costraints(self, constraint_list):
+        self.constraints = lambda values: (
+            add_constraints(values, constraint_list)
+        )
+    
+    def check_constraints(self, item_list):
+        total_cpu = sum(map(operator.itemgetter('cpu'), item_list))
+        total_mem = sum(map(operator.itemgetter('mem'), item_list))
+        total_disk = sum(map(operator.itemgetter('disk'), item_list))
+        total_net = sum(map(operator.itemgetter('net'), item_list))
+        return (total_cpu < 100) and (total_mem < 100) and \
+            (total_disk < 100) and (total_net < 100)
+
+    def get_vm_objects(self, items_list):
+        result = []
+        for item in items_list:
+            result += [self.vmm.items[item]]#get_item_values(item)]
+        return result
+      
+    def set_vmm(self, vmm):
+        self.vmm = vmm
+        self.items = self.vmm.items
+
+    def solve_host(self):
+        result = []
+        test = False
+        r = range(len(self.vmm.items))
+        s = set(r)
+        while not test:
+            r = random.sample(s, 1)[0]
+            #r = random.randint(0, len(self.vmm.items))
+            vm = self.vmm.items[r]
+            #print('random: {} ({})'.format(r, vm))
+            test = self.check_constraints(result + [vm.value])
+            #test = self.constraints(result + [vm.value])
+            #print('test: {}'.format(test))
+            if test:
+                #print('Adding: {}'.format(vm))
+                result += [r]
+        return result
+
+
 class OpenOptStrategyPlacement:
     def __init__(self):
         self.constraints = None
@@ -272,56 +322,6 @@ class OpenOptStrategyPlacement:
         #print('solve_host result: {}'.format(result.xf[0]))
         return result
 #        return 10
-
-
-class EnergyUnawareStrategyPlacement:
-    def __init__(self):
-        self.constraints = None
-        self.items = None
-        self.vmm = None
-        self.pmm = None
-        self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
-
-    def gen_costraints(self, constraint_list):
-        self.constraints = lambda values: (
-            add_constraints(values, constraint_list)
-        )
-    
-    def check_constraints(self, item_list):
-        total_cpu = sum(map(operator.itemgetter('cpu'), item_list))
-        total_mem = sum(map(operator.itemgetter('mem'), item_list))
-        total_disk = sum(map(operator.itemgetter('disk'), item_list))
-        total_net = sum(map(operator.itemgetter('net'), item_list))
-        return (total_cpu < 100) and (total_mem < 100) and \
-            (total_disk < 100) and (total_net < 100)
-
-    def get_vm_objects(self, items_list):
-        result = []
-        for item in items_list:
-            result += [self.vmm.items[item]]#get_item_values(item)]
-        return result
-      
-    def set_vmm(self, vmm):
-        self.vmm = vmm
-        self.items = self.vmm.items
-
-    def solve_host(self):
-        result = []
-        test = False
-        r = range(len(self.vmm.items))
-        s = set(r)
-        while not test:
-            r = random.sample(s, 1)[0]
-            #r = random.randint(0, len(self.vmm.items))
-            vm = self.vmm.items[r]
-            #print('random: {} ({})'.format(r, vm))
-            test = self.check_constraints(result + [vm.value])
-            #test = self.constraints(result + [vm.value])
-            #print('test: {}'.format(test))
-            if test:
-                #print('Adding: {}'.format(vm))
-                result += [r]
-        return result
 
 
 def my_generator(random, args):
@@ -664,7 +664,7 @@ if __name__ == "__main__":
     vms = 10
     s = Simulator()
     
-    pms_scenarios = [288] #range(10, 110, 10)
+    pms_scenarios = range(10, 110, 10)
     vms_scenarios = range(16, 304, 16)
     
     #pms_scenarios = range(20, 50, 10)
@@ -675,18 +675,9 @@ if __name__ == "__main__":
     
     strategy = OpenOptStrategyPlacement()
     s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
-    
-    #for pms in pms_scenarios:
-    #    for vms in vms_scenarios:
-    #        s.simulate_scenario(strategy, pms, vms)
-    #s.csv_writer('results/{}-{}.csv'.format(strategy.__class__.__name__, stamp))
-    #s.pickle_writer('results/{}-{}.pkl'.format(strategy.__class__.__name__, stamp))
-    
-    #strategy = OpenOptStrategyPlacement()
-    #s.simulate(strategy, pms, vms)
-    
+
     #strategy = EvolutionaryComputationStrategyPlacement()
-    #s.simulate(strategy, pms, vms)
+    #s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
     
     vms = 10
     
