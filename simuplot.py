@@ -81,7 +81,7 @@ class GraphGenerator:
         return result
 
 
-    def graph_template(self, data_ref, data1, data2, x_aspect, y_aspect, x_title, y_title, title):
+    def save_fig(self, scenario, data_ref, data1, data2, x_aspect, y_aspect, x_title, y_title, title):
         #x1 = data_ref['physical_mahines_count']
         ##x1 = data_ref['virtual_mahines_count']
         #y1 = data_ref['virtual_machines_unplaced']
@@ -125,7 +125,7 @@ class GraphGenerator:
         #ax.fill(y2a, y2b, alpha=0.3)
         ax.set_xlabel(x_title, fontsize=18)
         ax.set_ylabel(y_title, fontsize=18)
-        ax.set_title(title)
+        ax.set_title(title + '(' + str(scenario) + ' hosts )')
         #ax.legend(loc=2); # upper left corner
         ax.xaxis.set_ticks(x2)
         pylab.xticks(x2, self.vms_ticks(x2), rotation='vertical', verticalalignment='top')
@@ -159,9 +159,12 @@ class GraphGenerator:
         # Put a legend below current axis
         #ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.05), fancybox=True, shadow=False, ncol=5)
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
-            fancybox=True, shadow=False, ncol=5)    
-        return plt.savefig(self.result_dir + '/' +
-                           x_title + '_vs_' + y_title + '.png')
+            fancybox=True, shadow=False, ncol=5)
+        
+        plt.savefig(self.result_dir + '/' + str(scenario) + '-' +
+            title + '.png')
+        #return plt.savefig(self.result_dir + '/' + str(scenario) +
+        #                   x_title + ' vs ' + y_title + '.png')
 
     def create_comparison_graph(self):
         for scenario in self.pms_scenarios:
@@ -183,14 +186,40 @@ class GraphGenerator:
             #x_title = 'Number of VMs'
             #y_title = 'Energy consumed (Watts)'
             #title = 'Energy consumption comparison'
-            self.graph_template(data_ref, data1, data2,
-                                'virtual_mahines_count', 'energy_consumed',
-                                'Number of VMs', 'Energy consumed (Watts)',
-                                'Energy consumption comparison')
-            self.graph_template(data_ref, data1, data2,
-                                'virtual_mahines_count', 'elapsed_time',
-                                'Number of VMs', 'Time (seconds)',
-                                'Time comparison')
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'energy_consumed',
+                'Number of VMs', 'Energy consumed (Watts)',
+                'Energy consumption comparison')
+            
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'elapsed_time',
+                'Number of VMs', 'Time (seconds)',
+                'Time comparison')
+            
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'physical_machines_used',
+                'Number of VMs', 'No. physical machines used',
+                'Used physical machines comparison')
+            
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'physical_machines_suspended',
+                'Number of VMs', 'No. physical machines suspended',
+                'Suspended physical machines comparison')
+            
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'physical_machines_idle',
+                'Number of VMs', 'No. physical machines idle',
+                'Idle physical machines comparison')
+            
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'virtual_machines_placed',
+                'Number of VMs', 'No. virtual machines placed',
+                'Placed VMs comparison')
+            
+            self.save_fig(scenario, data_ref, data1, data2,
+                'virtual_mahines_count', 'virtual_machines_unplaced',
+                'Number of VMs', 'No. virtual machines not placed',
+                'Unplaced VMs comparison')
             
             #result['physical_mahines_count'].append(int(row[0]))
             #result['virtual_mahines_count'].append(int(row[1]))
