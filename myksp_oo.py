@@ -111,9 +111,14 @@ class PhysicalMachine:
     def __init__(self, id):
         self.id = '%d' % id # self.__count__
         self.vms = []
-        self.cpu = self.mem = 0
-        self.disk = self.net = 0
+        self.startup_machine()
         PhysicalMachine.__count__ += 1
+        
+    def startup_machine(self):
+        self.cpu = 15
+        self.mem = 15
+        self.disk = self.net = 0
+        self.suspended = False
 
     def consumed_power(self):
         pass
@@ -136,25 +141,48 @@ class PhysicalMachine:
         return result
     
     def __str__(self):
-        result = 'PM[{}/{}/{}]({}, {}, {}, {}) | [{}]'.format(
+        if self.suspended:
+            state = 'sus'
+        else:
+            state = 'run'
+        result = 'PM[{}-{}/{}]({}, {}, {}, {}) | [{}/{}]'.format(
             self.id,
-            len(self.vms),
+            state,
             self.estimate_consumed_power(),
             self.cpu,
             self.mem,
             self.disk,
             self.net,
+            len(self.vms),
             self.vms_to_str())
         return result
     
+    def suspend(self):
+        self.suspended = True
+        self.cpu = 0
+        self.mem = 0
+        self.disk = 0
+        self.net = 0
+        
+    def wol(self):
+        self.startup_machine()
+    
     def estimate_consumed_power(self):
-        if self.vms != []:
-            # P(cpu) = P_idle + (P_busy - P_idle) x cpu
-            p_idle = 114.0
-            p_busy = 250.0
-            result = p_idle + (p_busy - p_idle) * self.cpu/100
-        else:
+        p_idle = 114.0
+        p_busy = 250.0
+        result = p_idle + (p_busy - p_idle) * self.cpu/100
+        if self.suspended:
             result = 5
+        else:
+            if self.vms != []:
+            # P(cpu) = P_idle + (P_busy - P_idle) x cpu
+                p_idle = 114.0
+                p_busy = 250.0
+                result = p_idle + (p_busy - p_idle) * self.cpu/100
+            else:
+                #self.cpu = 15
+                #result = self.estimate_consumed_power()
+                pass
         return result
 
 class PMManager:
@@ -464,6 +492,10 @@ class Manager:
                     #print('assignment: {}'.format(host))
                     #print('left: {}'.format(self.vmm))
                     #self.remove_placed_vms()
+            else:
+                if not isinstance(self.strategy, EnergyUnawareStrategyPlacement):
+                    host.suspend()
+                print(host)
         #return placement
         
     def calculate_power_consumed(self):
@@ -479,10 +511,17 @@ class Manager:
                 result += 1
         return result
     
+    def calculate_physical_hosts_suspended(self):
+        result = 0
+        for host in self.pmm.items:
+            if host.suspended:
+                result += 1
+        return result
+    
     def calculate_physical_hosts_idle(self):
         result = 0
         for host in self.pmm.items:
-            if host.vms == []:
+            if host.vms == [] and not host.suspended:
                 result += 1
         return result
 
@@ -549,9 +588,10 @@ class Simulator:
         #          #'virtual_machines_placed', 'virtual_machines_unplaced',
         #          'strategy',
         #          'start_time', 'end_time', 'elapsed_time']
-        header = ['#PM', '#VM', 'KW',
-                  '#PM-U', '#PM-I',
+        header = ['#PM', '#VM',
+                  '#PM-U', '#PM-S', '#PM-I',
                   '#VM-P', 'VM-U',
+                  'KW',
                   'strategy',
                   #'ST', 'ET',
                   'T']
@@ -561,9 +601,12 @@ class Simulator:
     def csv_append_scenario(self, scenario):
         #for r in self.results:
         r = self.results[scenario]
-        self.writer.writerow([r['physical_mahines_count'], r['virtual_mahines_count'], r['energy_consumed'],
-              r['physical_machines_used'], r['physical_machines_idle'],
+        self.writer.writerow([r['physical_mahines_count'], r['virtual_mahines_count'],
+              r['physical_machines_used'],
+              r['physical_machines_suspended'],
+              r['physical_machines_idle'],
               r['virtual_machines_placed'], r['virtual_machines_unplaced'],
+              r['energy_consumed'],
               r['strategy'].__class__.__name__,
               #r['start_time'], r['end_time'],
               r['elapsed_time']])
@@ -593,6 +636,7 @@ class Simulator:
         result['energy_consumed'] = m.calculate_power_consumed()
         result['physical_machines_used'] = m.calculate_physical_hosts_used()
         result['physical_machines_idle'] = m.calculate_physical_hosts_idle()
+        result['physical_machines_suspended'] = m.calculate_physical_hosts_suspended()
         result['virtual_machines_placed'] = m.placed_vms()
         result['virtual_machines_unplaced'] = m.unplaced_vms()
         result['end_time'] = time.time()
@@ -620,11 +664,11 @@ if __name__ == "__main__":
     vms = 10
     s = Simulator()
     
-    #pms_scenarios = range(10, 110, 10)
-    #vms_scenarios = range(16, 304, 16)
+    pms_scenarios = [288] #range(10, 110, 10)
+    vms_scenarios = range(16, 304, 16)
     
-    pms_scenarios = range(20, 50, 10)
-    vms_scenarios = range(16, 64, 16)
+    #pms_scenarios = range(20, 50, 10)
+    #vms_scenarios = range(16, 64, 16)
     
     strategy = EnergyUnawareStrategyPlacement()
     s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
