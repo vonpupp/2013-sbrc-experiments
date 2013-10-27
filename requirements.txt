@@ -1,2 +1,7 @@
-inspyred
-pudb
+FuncDesigner==0.5115
+inspyred==1.0
+numpy==1.7.1
+openopt==0.5115
+scipy==0.13.0
+setproctitle==1.1.8
+wsgiref==0.1.2
