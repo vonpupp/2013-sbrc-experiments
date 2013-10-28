@@ -54,8 +54,8 @@ class VirtualMachine(dict):
 
 
 class VMManager:
-    def __init__(self, total_vm):
-        tg = tracegen.TraceGenerator()
+    def __init__(self, trace_file, total_vm):
+        tg = tracegen.TraceGenerator(trace_file)
         trace = tg.gen_trace()
         self.items = []
         for t in islice(enumerate(trace), total_vm):
@@ -435,9 +435,9 @@ class Manager:
 #    power = calculate_placement_power(placement)
 #    print('TOTAL POWER: {} WATTS'.format(power))
 
-    def set_vm_count(self, total_vm):
+    def set_vm_count(self, trace_file, total_vm):
         self.total_vm = total_vm
-        self.vmm = VMManager(total_vm)
+        self.vmm = VMManager(trace_file, total_vm)
         #print('1 Manager self.vmm: {}'.format(self.vmm))
 
     def set_pm_count(self, total_pm):
@@ -621,14 +621,14 @@ class Simulator:
         except:
             pass
         
-    def simulate_scenario(self, strategy, pms, vms):
+    def simulate_scenario(self, strategy, trace_file, pms, vms):
         result = {}
         result['start_time'] = time.time()
         result['manager'] = m = Manager()
         result['physical_mahines_count'] = pms
         m.set_pm_count(pms)
         result['virtual_mahines_count'] = vms
-        m.set_vm_count(vms)
+        m.set_vm_count(trace_file, vms)
         result['strategy'] = strategy
         m.set_strategy(strategy)
         m.solve_hosts()
@@ -644,13 +644,13 @@ class Simulator:
         self.results.append(result)
         return len(self.results)-1
 
-    def simulate_strategy(self, strategy, pms_scenarios, vms_scenarios):
+    def simulate_strategy(self, strategy, trace_file, pms_scenarios, vms_scenarios):
         stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d-%H%M%S')
         #strategy = EnergyUnawareStrategyPlacement()
         for pms in pms_scenarios:
             self.csv_write_simulation('results/{}-{}-{}.csv'.format(strategy.__class__.__name__, pms, stamp))
             for vms in vms_scenarios:
-                scenario = self.simulate_scenario(strategy, pms, vms)
+                scenario = self.simulate_scenario(strategy, trace_file, pms, vms)
                 self.csv_append_scenario(scenario)
             self.csv_close_simulation()
         self.pickle_writer('results/pickle-{}.pkl'.format(stamp))
@@ -664,17 +664,18 @@ if __name__ == "__main__":
     vms = 10
     s = Simulator()
     
-    pms_scenarios = range(10, 110, 10)
+    trace_file = 'planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p'
+    pms_scenarios = [144] #range(10, 110, 10)
     vms_scenarios = range(16, 304, 16)
     
     #pms_scenarios = range(20, 50, 10)
     #vms_scenarios = range(16, 64, 16)
     
     strategy = EnergyUnawareStrategyPlacement()
-    s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
+    s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
     
     strategy = OpenOptStrategyPlacement()
-    s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
+    s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
 
     #strategy = EvolutionaryComputationStrategyPlacement()
     #s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
