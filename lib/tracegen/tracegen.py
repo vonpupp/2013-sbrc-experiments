@@ -9,8 +9,9 @@ factor = 1/4
 class TraceGenerator():
   
       
-    def __init__(self):
-        fname='planetlab-selected/planetlab-20110420-filtered_pluto_cs_brown_edu_root'
+    def __init__(self, fname):
+        #fname='planetlab-selected/planetlab-20110420-filtered_pluto_cs_brown_edu_root'
+        #fname='planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p'
         self.fname = fname
         with open(self.fname) as f:
             self.lines = f.readlines()
