@@ -568,14 +568,14 @@ if __name__ == "__main__":
     #pms_scenarios = range(20, 50, 10)
     #vms_scenarios = range(16, 64, 16)
     
-    strategy = EnergyUnawareStrategyPlacement()
-    s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
+    #strategy = EnergyUnawareStrategyPlacement()
+    #s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
     
-    strategy = OpenOptStrategyPlacement()
-    s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
+    #strategy = OpenOptStrategyPlacement()
+    #s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
 
-    #strategy = EvolutionaryComputationStrategyPlacement()
-    #s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
+    strategy = EvolutionaryComputationStrategyPlacement()
+    s.simulate_strategy(strategy, trace_file, pms_scenarios, vms_scenarios)
     
     vms = 10
     
