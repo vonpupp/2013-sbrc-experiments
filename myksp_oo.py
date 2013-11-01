@@ -248,20 +248,22 @@ class EnergyUnawareStrategyPlacement:
 
     def solve_host(self):
         result = []
-        test = False
+        items_list = []
+        test = True
         r = range(len(self.vmm.items))
         s = set(r)
-        while not test:
+        while test:
             r = random.sample(s, 1)[0]
             #r = random.randint(0, len(self.vmm.items))
             vm = self.vmm.items[r]
             #print('random: {} ({})'.format(r, vm))
-            test = self.check_constraints(result + [vm.value])
+            test = self.check_constraints(items_list + [vm.value])
             #test = self.constraints(result + [vm.value])
             #print('test: {}'.format(test))
             if test:
                 #print('Adding: {}'.format(vm))
                 result += [r]
+                items_list += [vm.value]
         return result
 
 
@@ -665,8 +667,11 @@ if __name__ == "__main__":
     s = Simulator()
     
     trace_file = 'planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p'
-    pms_scenarios = [144] #range(10, 110, 10)
-    vms_scenarios = range(16, 304, 16)
+    #pms_scenarios = [144] #range(10, 110, 10)
+    #vms_scenarios = range(16, 304, 16)
+    
+    pms_scenarios = [72] #range(10, 110, 10)
+    vms_scenarios = range(16, 160, 16)
     
     #pms_scenarios = range(20, 50, 10)
     #vms_scenarios = range(16, 64, 16)
