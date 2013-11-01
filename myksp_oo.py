@@ -5,11 +5,11 @@
 import random
 import uuid
 from itertools import islice
-#from operator import attrgetter
 import operator
 import datetime
 import csv
 import pickle
+import copy
 
 import lib.tracegen.tracegen as tracegen
 from openopt import *
@@ -44,10 +44,7 @@ class VirtualMachine(dict):
         # val = getattr(ob, attr)
         if type(attribute) is str:
             ob = self.value
-            #result = getattr(ob, attribute)
             result = ob[attribute]
-            #result = attrgetter(attribute)
-#            print('getitem: attribute:{}, value:{}'.format(attribute, result))
             return result
         else:
             print('getitem: attribute is not a string, is:{}, value:{}'.format(type(attribute), attribute))
@@ -60,19 +57,14 @@ class VMManager:
         self.items = []
         for t in islice(enumerate(trace), total_vm):
             self.items += [VirtualMachine(t[0], t[1][0], t[1][1], t[1][2], t[1][3])]
-#        self.items = [VirtualMachine(i, t[1][0], t[1][1], t[1][2], t[1][3])
-#                          for i, t in enumerate(islice(enumerate(trace), total_vm))]
-#        self.vms_list = [VirtualMachine(t[0], t[1], t[2], t[3])
-#                          for i, t in islice(enumerate(trace), total_vm)]
 
     def get_item_index(self, id):
         result = -1
         i = 0
         found = False
-        while i < len(self.items) and not found:  # TODO: vms_list
+        while i < len(self.items) and not found:
             item = self.items[i]
-            j = item.id #int(item['name'].split()[1])
-#           print('  get_item_index={} j={}'.format(id, j))
+            j = item.id
             found = j == id.id
             if found:
                 result = i
@@ -82,7 +74,7 @@ class VMManager:
     def get_item_values(self, id):
         result = self.get_item_index(id)
         if result is not -1:
-            result = self.items[result]  # TODO: vms_list
+            result = self.items[result]
         else:
             result = None
         return result
@@ -90,11 +82,8 @@ class VMManager:
     def items_remove(self, remove_list):
         for to_delete in remove_list:
             i = self.get_item_index(to_delete)
-            #self.items.remove(to_delete)
             if i is not -1:
                 del self.items[i]
-                #value = self.items[i]
-                #self.items.remove(value)
 
     def __str__(self):
         result = 'VMPool['
@@ -103,8 +92,6 @@ class VMManager:
         result += ']'
         return result
 
-#    def __getitem__(self, attribute):
-#        return self.items[attribute]
 
 class PhysicalMachine:
     __count__ = 0
@@ -168,21 +155,19 @@ class PhysicalMachine:
         self.startup_machine()
     
     def estimate_consumed_power(self):
-        p_idle = 114.0
-        p_busy = 250.0
-        result = p_idle + (p_busy - p_idle) * self.cpu/100
         if self.suspended:
             result = 5
         else:
-            if self.vms != []:
             # P(cpu) = P_idle + (P_busy - P_idle) x cpu
-                p_idle = 114.0
-                p_busy = 250.0
-                result = p_idle + (p_busy - p_idle) * self.cpu/100
-            else:
-                #self.cpu = 15
-                #result = self.estimate_consumed_power()
-                pass
+            p_idle = 114.0
+            p_busy = 250.0
+            result = p_idle + (p_busy - p_idle) * self.cpu/100
+            #if self.vms != []:
+            #    p_idle = 114.0
+            #    p_busy = 250.0
+            #    result = p_idle + (p_busy - p_idle) * self.cpu/100
+            #else:
+            #    pass
         return result
 
 class PMManager:
@@ -211,10 +196,6 @@ def add_constraint(values, constraint):
 def add_constraints(values, constraint_list):
     return [add_constraint(values, constraint) for constraint in constraint_list]
 
-#def gen_costraints(constraint_list):
-#    global constraints
-#    constraints = lambda values: (add_constraints(values, constraint_list))
-
 class EnergyUnawareStrategyPlacement:
     def __init__(self):
         self.constraints = None
@@ -237,10 +218,7 @@ class EnergyUnawareStrategyPlacement:
             (total_disk < 100) and (total_net < 100)
 
     def get_vm_objects(self, items_list):
-        result = []
-        for item in items_list:
-            result += [self.vmm.items[item]]#get_item_values(item)]
-        return result
+        return items_list
       
     def set_vmm(self, vmm):
         self.vmm = vmm
@@ -249,21 +227,21 @@ class EnergyUnawareStrategyPlacement:
     def solve_host(self):
         result = []
         items_list = []
-        test = True
-        r = range(len(self.vmm.items))
-        s = set(r)
-        while test:
-            r = random.sample(s, 1)[0]
-            #r = random.randint(0, len(self.vmm.items))
-            vm = self.vmm.items[r]
-            #print('random: {} ({})'.format(r, vm))
-            test = self.check_constraints(items_list + [vm.value])
-            #test = self.constraints(result + [vm.value])
-            #print('test: {}'.format(test))
-            if test:
-                #print('Adding: {}'.format(vm))
-                result += [r]
-                items_list += [vm.value]
+        more = True
+        #tmp = self.vmm.items.copy()
+        tmp = copy.deepcopy(self.vmm.items)
+        done = False
+        while not done:
+            index = random.randrange(len(tmp))
+            vm = tmp.pop(index)
+            more = self.check_constraints(items_list + [vm])
+            if more:
+                #result += [vm.id]
+                result += [vm]
+                items_list += [vm]
+            else:
+                tmp.append(vm)
+            done = not more or (len(tmp) == 0)
         return result
 
 
@@ -276,54 +254,26 @@ class OpenOptStrategyPlacement:
         #self.items_count = items_count
         #self.hosts_count = hosts_count
         self.gen_costraints(['cpu', 'mem', 'disk', 'net'])
-#        self.gen_costraints(['cpu'])
-
-#    def gen_costraint(self, values, constraint):
-#        return values.value[constraint] < 99
-
-#    def add_constraints(self, values, constraint_list):
-#        return [self.add_constraint(values, constraint) for constraint in constraint_list]
 
     def gen_costraints(self, constraint_list):
         self.constraints = lambda values: (
-#                                      values['cpu'] < 100,
-#                                      values['mem'] < 100,
-#                                      values['disk'] < 100,
-#                                      values['net'] < 100,
-#                                      values['placed'] == 0,
-#                                      values['nItems'] <= 10,
-#                                      values['nItems'] >= 5
-#            values['placed'] < 1,
             add_constraints(values, constraint_list)
         )
 
     def get_vm_objects(self, items_list):
-        #print('get_vm_objects self.vmm.items: {}'.format(self.vmm))
-        #print('get_vm_objects self.items: {}'.format(self.items))
-        #print('get_vm_objects items_list: {}'.format(items_list.xf))
         result = []
-        #test = self.vmm.get_item_values('5')
         for item in items_list.xf:
-            # i = int(item.split()[1])
             result += [self.vmm.items[item]]#get_item_values(item)]
-            #print('result: {}'.format(result))
         return result
       
     def set_vmm(self, vmm):
         self.vmm = vmm
         self.items = self.vmm.items
-        #print('OpenOptStrategyPlacement set_vmm: {}'.format(self.vmm))
 
     def solve_host(self):
-        #print(list(self.items))
-        #print(self.items[0])
-#        print(self.constraints)
         p = KSP('weight', self.items, constraints = self.constraints)
         result = p.solve('glpk', iprint = -1)
-        #print('solve_host result: {}'.format(result.xf))
-        #print('solve_host result: {}'.format(result.xf[0]))
         return result
-#        return 10
 
 
 def my_generator(random, args):
@@ -386,10 +336,6 @@ class EvolutionaryComputationStrategyPlacement:
         prng.seed(time.time())
         
         itemstuples = self.gen_vms()
-        ##items = fake_gen_vms(prng)  # gen_vms()
-        #items = gen_vms()
-        ##print(items)
-        ##raw_input('...')
         
         psize = 50
         tsize = 25
@@ -414,11 +360,8 @@ class EvolutionaryComputationStrategyPlacement:
                               )
     
         best = max(final_pop)
-        #print(best.fitness)
         result = [i for i, c in enumerate(best.candidate) if c == 1]
-        #print result
         return result
-        #print(', '.join(['item {}'.format(i) for i, c in enumerate(best.candidate) if c == 1]))
 
 
 class Manager:
@@ -429,18 +372,10 @@ class Manager:
         self.vmm = None
         self.pmm = None
         self.strategy = None
-#    items = gen_vms()
-#    vms_list = gen_vms()
-#    gen_costraints(['cpu', 'mem', 'disk', 'net'])
-#    placement = solve_hosts()
-#    print placement
-#    power = calculate_placement_power(placement)
-#    print('TOTAL POWER: {} WATTS'.format(power))
 
     def set_vm_count(self, trace_file, total_vm):
         self.total_vm = total_vm
         self.vmm = VMManager(trace_file, total_vm)
-        #print('1 Manager self.vmm: {}'.format(self.vmm))
 
     def set_pm_count(self, total_pm):
         self.total_pm = total_pm
@@ -449,27 +384,16 @@ class Manager:
     def set_strategy(self, strategy):
         self.strategy = strategy
         self.strategy.set_vmm(self.vmm)
-        #self.strategy.vmm = self.vmm
-        #self.strategy.items = self.vmm.items
         self.strategy.pmm = self.pmm
       
     def place_vms(self, vms, host):
-        #host.vms = vms
         i = 0
         while i < len(vms):
-            #vm = self.vmm.items[i]
             vm = vms[i]
             host.place_vm(vm)
             print('{}'.format(host))
-            #self.vmm.items.remove(vm)
             i += 1
         self.vmm.items_remove(vms)
-#        for vm in vms:
-#            host.place_vm(vm)
-            #vm.value['placed'] = 1
-            #self.vmm.items.remove(vm)
-            #print('left: {}'.format(self.vmm))
-            #vm.value['placed'] = int(host.id)
 
     def placed_vms(self):
         result = 0
@@ -481,24 +405,16 @@ class Manager:
         return self.total_vm - self.placed_vms()
       
     def solve_hosts(self):
-        #placement = []
-        for host in self.pmm.items: #range(self.total_pm):
+        for host in self.pmm.items:
             if self.vmm.items != []:
                 solution = self.strategy.solve_host()
-                #print('solution: {}'.format(solution.xf))
-                #print('Manager self.vmm: {}'.format(self.vmm))
                 vms = self.strategy.get_vm_objects(solution)
-                #placement.append(vms)
                 if vms is not None:
                     self.place_vms(vms, host)
-                    #print('assignment: {}'.format(host))
-                    #print('left: {}'.format(self.vmm))
-                    #self.remove_placed_vms()
             else:
                 if not isinstance(self.strategy, EnergyUnawareStrategyPlacement):
                     host.suspend()
                 print(host)
-        #return placement
         
     def calculate_power_consumed(self):
         result = 0
@@ -570,26 +486,7 @@ class Simulator:
         self.out_file = open(fout, 'wb')
         #out_file = open(fout, 'a+')
         
-        #fieldnames = list(set(k for d in self.results for k in d))
-        #writer = csv.DictWriter(out_file, fieldnames=fieldnames, dialect='excel')
         self.writer = csv.writer(self.out_file, delimiter='\t')
-        #csvhdlr = csv.writer(fh, delimiter='\t')#, quotechar='"')#, quoting=csv.QUOTE_MINIMAL)
-        #result['physical_mahines_count'] = pms
-        #result['virtual_mahines_count'] = vms
-        #result['energy_consumed'] = m.calculate_power_consumed()
-        #result['physical_machines_used'] = m.calculate_physical_hosts_used()
-        #result['physical_machines_idle'] = m.calculate_physical_hosts_idle()
-        #result['virtual_machines_placed']
-        #result['virtual_machines_unplaced']
-        #result['strategy'] = strategy
-        #result['start_time'] = time.time()
-        #result['end_time'] = time.time()
-        #result['elapsed_time']
-        #header = ['physical_mahines_count', 'virtual_mahines_count', 'energy_consumed',
-        #          'physical_machines_used', 'physical_machines_idle',
-        #          #'virtual_machines_placed', 'virtual_machines_unplaced',
-        #          'strategy',
-        #          'start_time', 'end_time', 'elapsed_time']
         header = ['#PM', '#VM',
                   '#PM-U', '#PM-S', '#PM-I',
                   '#VM-P', 'VM-U',
@@ -597,7 +494,6 @@ class Simulator:
                   'strategy',
                   #'ST', 'ET',
                   'T']
-        #writer.writeheader()
         self.writer.writerow(header)
         
     def csv_append_scenario(self, scenario):
@@ -658,10 +554,6 @@ class Simulator:
         self.pickle_writer('results/pickle-{}.pkl'.format(stamp))
 
 if __name__ == "__main__":
-#    vmm = VMManager()
-#    strategy = OpenOptStrategyPlacement(vmm, 2)
-#    m = Manager(strategy)
-    
     pms = 2
     vms = 10
     s = Simulator()
@@ -686,64 +578,6 @@ if __name__ == "__main__":
     #s.simulate_strategy(strategy, pms_scenarios, vms_scenarios)
     
     vms = 10
-    
-    #st1 = time.time()
-    #m1 = Manager()
-    #m1.set_pm_count(pms)
-    #m1.set_vm_count(vms)
-    #s = EnergyUnawareStrategyPlacement()
-    #m1.set_strategy(s)
-    #m1.solve_hosts()
-    #p1 = m1.pmm
-    #e1 = m1.calculate_power_consumed()
-    #print(e1)
-    #uh1 = m1.calculate_physical_hosts_used()
-    #print(uh1)
-    #ih1 = m1.calculate_physical_hosts_idle()
-    #print(ih1)
-    #et1 = time.time() - st1
-    #print(et1)
-    ##t = m.calculate_time_elapsed()
-    #
-    #st2 = time.time()
-    #m2 = Manager()
-    ##m.set_trace_file('blabla')
-    #m2.set_pm_count(pms)
-    #m2.set_vm_count(vms)
-    #s = OpenOptStrategyPlacement()
-    #m2.set_strategy(s)
-    #m2.solve_hosts()
-    #p2 = m2.pmm
-    #e2 = m2.calculate_power_consumed()
-    #print(e2)
-    #uh2 = m2.calculate_physical_hosts_used()
-    #print(uh2)
-    #ih2 = m2.calculate_physical_hosts_idle()
-    #print(ih2)
-    #et2 = time.time() - st2
-    #print(et2)
-    #
-    #st3 = time.time()
-    #m3 = Manager()
-    #m3.set_pm_count(pms)
-    #m3.set_vm_count(vms)
-    #s = EvolutionaryComputationStrategyPlacement()
-    #m3.set_strategy(s)
-    #m3.solve_hosts()
-    #p3 = m3.pmm
-    #e3 = m3.calculate_power_consumed()
-    #print(e3)
-    #uh3 = m3.calculate_physical_hosts_used()
-    #print(uh3)
-    #ih3 = m3.calculate_physical_hosts_idle()
-    #print(ih3)
-    #et3 = time.time() - st3
-    #print(et3)
-    ##t = m.calculate_time_elapsed()
-    
-    #print(p1)
-    #print(p2)
-    #print(100 - p1/p2*100)
     
 # OpenOpt
 #15793.08
