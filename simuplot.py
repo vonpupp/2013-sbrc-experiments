@@ -10,7 +10,7 @@ from matplotlib import pylab
 from matplotlib.patches import Polygon
 
 dir = 'results'
-pms_scenarios = [100] #range(20, 50, 10)
+pms_scenarios = [72] #range(10, 110, 10)
 
 
 def fill_between(ax, x, y1, y2, **kwargs):

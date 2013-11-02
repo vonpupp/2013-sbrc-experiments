@@ -17,7 +17,7 @@ def gen_vms():
                   'disk': t[2],
                   'net': t[3],
                   'n': 1
-             }) for i,t in itertools.islice(enumerate(trace), 288)]
+             }) for i,t in itertools.islice(enumerate(trace), 10)]
     return items
 
 '''    
@@ -36,6 +36,7 @@ def fake_gen_vms(random):
 
 def my_generator(random, args):
     items = args['items']
+    print items
     return [random.choice([0]*99 + [1]) for _ in range(len(items))]
 
 @inspyred.ec.evaluators.evaluator
@@ -46,6 +47,7 @@ def my_evaluator(candidate, args):
         totals[metric] = sum([items[i][1][metric] for i, c in enumerate(candidate) if c == 1])
     constraints = [max(0, totals[c] - 99) for c in ['cpu', 'mem', 'disk', 'net']]
     fitness = totals['weight'] - sum(constraints)
+    print fitness
     return fitness
 
 
