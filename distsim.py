@@ -16,19 +16,20 @@
 # limitations under the License.
 
 """
-Distsim :: A VM distribution simulator
+Distsim :: A VM distribution/placement simulator
 """
 __version__ = "0.1"
 __author__  = "Albert De La Fuente"
 
 
 #import distsim.model.tracegen as tracegen
-from distsim.model.simulator import Simulator
+from distsim.managers.simmanager import Simulator
 from distsim.strategies.energyunaware import EnergyUnawareStrategyPlacement
 from distsim.strategies.iteratedksp import OpenOptStrategyPlacement
 from distsim.strategies.iteratedec import EvolutionaryComputationStrategyPlacement
 import time
 from functools import wraps
+import argparse
 
 #PROF_DATA = {}
 #
@@ -63,16 +64,47 @@ from functools import wraps
 
 
 if __name__ == "__main__":
-    pms = 2
-    vms = 10
+    # ./ distsim.py -h 72 -vma 16 -vmo 304 -vme 16
+    #   -t planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p
+    #   -o results/72-bla
+    # ./ simuplot.py
+    parser = argparse.ArgumentParser(description='A VM distribution/placement simulator.')
+    parser.add_argument('-pm', '--pmcount', help='Number of physical machines', required=False)
+    parser.add_argument('-vma', '--vmstart', help='Start number of VMs (def: 16)', required=False)
+    parser.add_argument('-vmo', '--vmstop', help='Stop number of VMs (def: 304)', required=False)
+    parser.add_argument('-vme', '--vmstep', help='Increment step number of VMs (def: 16)', required=False)
+    parser.add_argument('-t', '--vmtrace', help='Full path to trace file', required=True)
+    parser.add_argument('-o', '--output', help='Output path', required=True)
+    args = parser.parse_args()
+     
+    ## show values ##
+    #print ("Input file: %s" % args.input)
+    #print ("Output file: %s" % args.output)
+    
+    args = parser.parse_args()
+    #print args.accumulate(args.integers)
+    
+    try:
+        hosts = args.pmcount
+    except NameError:
+        hosts = 72
+        print "well, it WASN'T defined after all!"
+    else:
+        print "sure, it was defined."
+    
+    print hosts
+    
+    #pms = 2
+    #vms = 10
     s = Simulator()
     
     trace_file = 'planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p'
     #pms_scenarios = [144] #range(10, 110, 10)
     #vms_scenarios = range(16, 304, 16)
     
-    pms_scenarios = [72] #range(10, 110, 10)
-    vms_scenarios = range(16, 160, 16)
+    #hosts = args.hosts
+    pms_scenarios = [hosts] #range(10, 110, 10)
+    vms_scenarios = range(args.vmstart, args.vmstop, args.vmstep)
     
     #pms_scenarios = range(20, 50, 10)
     #vms_scenarios = range(16, 64, 16)
