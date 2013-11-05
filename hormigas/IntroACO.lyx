@@ -1,0 +1,399 @@
+#LyX 1.3 created this file. For more info see http://www.lyx.org/
+\lyxformat 221
+\textclass article
+\language english
+\inputencoding auto
+\fontscheme default
+\graphics default
+\paperfontsize default
+\papersize Default
+\paperpackage a4
+\use_geometry 0
+\use_amsmath 0
+\use_natbib 0
+\use_numerical_citations 0
+\paperorientation portrait
+\secnumdepth 3
+\tocdepth 3
+\paragraph_separation indent
+\defskip medskip
+\quotes_language english
+\quotes_times 2
+\papercolumns 1
+\papersides 1
+\paperpagestyle default
+
+\layout Standard
+\align center 
+Implementación de tres programas basados en algoritmos ACO
+\layout Standard
+\align center 
+Alberto Cuesta Cañada
+\layout Standard
+\align center 
+ITESM, Campus Monterrey
+\layout Standard
+\align center 
+alberto@cuesta.be
+\layout Standard
+\align center 
+791800
+\layout Section*
+
+1.
+ Resumen
+\layout Standard
+
+Recientemente, un número de algoritmos inspirados por el comportamiento
+ colectivo de colonias de hormigas ha sido aplicado con éxito a dificiles
+ problemas discretos de optimización.
+ En el presente documento se presenta el aprendizaje del autor en la materia
+ a través de la resolución de tres problemas con algoritmos ACO.
+ 
+\layout Standard
+
+El presente documento no debe ser considerado como un estudio minucioso,
+ puesto que la mayor parte de las actividades no fueron documentadas, siendo
+ como era un trabajo experimental, dinámico y no llamado a revelar nada
+ que no esté ya presente en la literatura sobre el tema.
+ Un documento más elaborado hubiera requerido mucho más tiempo y esfuerzo,
+ el presente solo debe ser considerado como una explicación general a los
+ programas implementados.
+\layout Section*
+
+2.
+ Ants.py
+\layout Standard
+
+Como primera implementación de un algoritmo ACO se escogió simular la busqueda
+ y recuperación de alimento por parte de hormigas.
+ En el programa ants.py un numero predeterminado de hormigas se mueven al
+ azar por un espacio en dos dimensiones.
+ Su único conocimiento acerca del entorno es la dirección y distancia hacia
+ el hormiguero, la cantidad de feromonas en su entorno más inmediato y si
+ se encuentran sobre una fuente de comida.
+ Con esta limitada información las hormigas son capaces de explorar todo
+ el escenario y recoger toda la comida actuando del siguiente modo.
+\layout Standard
+
+En ausencia de estímulos, la hormiga se mueve al azar.
+\layout Standard
+
+En caso de detectar feromonas en su alrededor, intentará seguirlas en dirección
+ contraria al nido, si tiene que decidir entre dos direcciones escogerá
+ aquella cuyo contenido de feromonas sea más fuerte.
+\layout Standard
+
+En caso de encontrar una fuente de comida: cargará una unidad de comida
+ y regresará en linea lo más recta posible al hormiguero, dejando un rastro
+ de feromonas.
+\layout Standard
+
+En cualquier momento, la hormiga puede decidir realizar un movimiento al
+ azar, aunque ésto provoca que cierto número de ellas pierdan el rastro
+ que estuvieran siguiendo, garantiza que siempre haya un número de hormigas
+ que se dedican a explorar en lugar de explotar las fuentes de comida conocidas.
+\layout Standard
+
+Las feromonas se debilitan con el tiempo, sin llegar nunca a desaparecer
+ del todo.
+ Que se debiliten garantiza que las rutas más convenientes sean las utilizadas,
+ mientras que el que nunca desaparezcan del todo previene que se pierda
+ la localización de fuentes de comida por falta de uso.
+\layout Standard
+\align center 
+
+\begin_inset Graphics
+	filename ants/ants.png
+	scale 60
+
+\end_inset 
+
+
+\layout Standard
+\align right 
+ants.py en funcionamiento
+\layout Subsection*
+
+
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$
+\backslash 
+pagebreak$
+\end_inset 
+
+
+\layout Section*
+
+3.
+ TSP.py
+\layout Standard
+
+El problema del viajante de comercio (TSP) puede ser indefinido informalmente
+ como sigue: Dado un grafo hallar el camino de coste mínimo que pase por
+ todos los nodos sin repetir ninguno.
+\layout Standard
+
+El programa creado comienza por generar un grafo con forma de malla 2D,
+ el peso de cada arista se determina al azar.
+ A continuación se genera un número de hormigas determinado, que son colocadas
+ en nodos aleatorios del grafo, el comportamiento de las hormigas se define
+ como sigue:
+\layout Standard
+
+Cada hormiga guarda qué nodos ha visitado en su busqueda actual de una solución.
+\layout Standard
+
+Cada nodo adyacente a una hormiga tiene una posibilidad 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$P_{ij}=
+\backslash 
+frac{Ph_{ij}^
+\backslash 
+alpha+C_{ij}^
+\backslash 
+beta}{
+\backslash 
+sum{Ph_{ij}^
+\backslash 
+alpha+C_{ij}^
+\backslash 
+beta}}$
+\end_inset 
+
+ de ser visitado por la misma, donde 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$Ph_{ij}$
+\end_inset 
+
+ es su contenido de feromonas y 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$C_{ij}$
+\end_inset 
+
+ es el coste asociado por desplazarse a ese nodo.
+ 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$ 
+\backslash 
+alpha
+\backslash 
+: y 
+\backslash 
+:
+\backslash 
+beta$
+\end_inset 
+
+ son variables para modificar el peso de cada variable.
+ La hormiga guarda en memoria que nodos ha visitado, para evitar visitar
+ alguno más de una vez.
+ En caso de que los cuatro nodos adyacentes hayan sido visitados caben dos
+ posibilidades.
+\layout Standard
+
+-Que aún queden nodos sin visitar: en tal caso la hormiga cancela el camino
+ que estuviera siguiendo y vuelve a empezar (Nota: Tal vez sería más eficiente
+ borrar nodos del principio del camino hasta liberar uno de los cuatro nodos,
+ creando algo similar al juego de la serpiente de los populares teléfonos
+ Nokia)
+\layout Standard
+
+-Que no queden nodos por visitar: en tal caso la hormiga ha encontrado un
+ camino válido y pasa a aplicar en cada arista una cantidad de feromona
+ según la fórmula 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$
+\backslash 
+cos(C_{p}^
+\backslash 
+delta*
+\backslash 
+pi/2)$
+\end_inset 
+
+, donde 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$C_{p}$
+\end_inset 
+
+ es el coste total del camino hallado y 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$
+\backslash 
+delta$
+\end_inset 
+
+ es un modificador.
+ Ésta fórmula se reveló bastante ineficiente, aparte de imponer limitaciones
+ a la hora de buscar optimizaciones.
+\layout Standard
+
+Pese a todas las ineficiencias, el programa funcionó, después de un periodo
+ de busqueda inicial, a partir del hallazgo de la primera solución, se puede
+ ver como las hormigas comienzan a establecer variaciones de la solución,
+ mejorandola progresivamente.
+\layout Standard
+\align center 
+
+\begin_inset Graphics
+	filename tsp.jpg
+	scale 60
+	keepAspectRatio
+
+\end_inset 
+
+
+\layout Standard
+\align right 
+tsp.py
+\layout Standard
+
+El algoritmo se mostró ineficiente son redes de mas de 50 nodos, si bien
+ tal vez se podría aumentar su rango de actuación mediante heurísticas que
+ proporcionen una rápida solución inicial, una correcta administración del
+ refuerzo y debilitamiento de las feromonas e incorporando mecanismos de
+ busqueda local y soluciones parciales.
+\layout Subsection*
+
+
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$
+\backslash 
+pagebreak$
+\end_inset 
+
+
+\layout Section*
+
+4.
+ QAP.py
+\layout Standard
+
+El Problema del Asignamiento Cuadrático se puede entender como el problema
+ de asignar de modo óptimo N tareas a N trabajadores, donde el beneficio
+ de la combinación se obtiene multiplicando la eficacia del trabajador por
+ el beneficio bruto de la tarea.
+\layout Standard
+
+Para la implementación de este algoritmo mediante ACO se buscó el modo de
+ representarlo como la busqueda del camino óptimo en un grafo.
+ Esto se consiguió creando una matriz de 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$N^2 
+\backslash 
+times N^2$
+\end_inset 
+
+, correspondiendo el elemento i,j al beneficio obtenido al asignar la tarea
+ i al trabajador j.
+ Así, el problema se reducia en encontrar un camino que pasase una vez por
+ cada fila y una vez por cada columna, de longitud N.
+\layout Standard
+
+La programación de este problema supuso un paso más de abstracción desde
+ las hormigas de la naturaleza hasta las de la algorítmica, el problema
+ se reveló intratable si fuera considerado del mismo modo asíncrono con
+ el que se trató el TSP.
+ Así se escogió que todas las hormigas avanzasen al mismo ritmo por la matriz,
+ usando la misma matriz de probabilidades para escoger un camino u otro,
+ cuando las hormigas llegan al final se borran las feromonas que existieran
+ y se vuelven a imprimir según los resultados de esta última iteración.
+\layout Standard
+
+En este caso se aplicaron algunas estrategias más, por ejemplo solo los
+ caminos que no fueran peores que el peor camino anterior serían reforzados
+ con feromonas.
+\layout Standard
+
+Una vez más, el principal problema se reveló el coste computacional, algo
+ superior a 
+\begin_inset ERT
+status Collapsed
+
+\layout Standard
+$N^2$
+\end_inset 
+
+, así como el problema de 
+\emph on 
+stagnation,
+\emph default 
+ que con frecuencia bloqueaba el programa en una solución subóptima.
+ Existen soluciones que merecen ser investigadas para ambos problemas, pero
+ quedan pendientes para un estudio futuro.
+\layout Standard
+\align center 
+
+\begin_inset Graphics
+	filename qap.jpg
+	scale 60
+
+\end_inset 
+
+
+\layout Standard
+\align right 
+qap.py en funcionamiento
+\layout Section*
+
+5.
+ Conclusiones
+\layout Standard
+
+En el presente estudio se analizó la implementación de tres problemas básicos
+ mediante algoritmos basados en colonias de hormigas.
+ Las particularidades de éstos algoritmos que fueron aprendidas comprenden:
+\layout Standard
+
+Que básicamente un algoritmo ACO es capaz de encontrar un camino de coste
+ mínimo (máximo) en un grafo, teniendo en cuenta detalles particulares si
+ fuera necesario.
+\layout Standard
+
+Que el modo de depositar las feromonas en el grafo dado es importante, e
+ interesante tener en cuenta detalles como el refuerzo solo de determinadas
+ soluciones, o el ritmo de degradación de las feromonas, o la cantidad máxima
+ de feromona que puede existir en un punto.
+\layout Standard
+
+Que el problema de estancamiento (stagnation) debe ser tenido en cuenta,
+ posiblemente mediante puestas a cero del problema recordando la solución
+ encontrada.
+\layout Standard
+
+Que el coste cmputacional de los algoritmos ACO respecto a la talla del
+ problema en un principio no es lineal, sino más bien cuadrático, y que
+ sería muy interesante el hallar modos de aplicar estos algoritmos a problemas
+ de gran talla.
+\the_end

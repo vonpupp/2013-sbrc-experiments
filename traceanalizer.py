@@ -25,18 +25,27 @@ __author__  = "Albert De La Fuente"
 from distsim.managers.simmanager import Simulator
 from distsim.model.traceanalize import TraceAnalize
 import argparse
+import os
 
-
-def get_default_arg(default_value, arg):
-    if arg is None:
-        return default_value
-    else:
-        return arg
 
 if __name__ == "__main__":
-    ta = TraceAnalize('planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_yale_p4p')
-    data = ta.analyze()
-    print data
+    t = TraceAnalize()
+    t.csv_write_header('traces.csv')
+    try:
+        for root, dirs, files in os.walk('planetlab-workload-traces'):
+            if '.git' in dirs:
+                dirs.remove('.git')
+            #if '.git' in subFolders:
+            #    subFolders.remove('.git')
+            for basename in files:
+                if basename[0] is not '.':
+                    filename = os.path.join(root, basename)
+                    data = t.analyze(filename)
+                    t.csv_append_row()
+    except:
+        print('exception with file: {}'.format(filename))
+    finally:
+        t.csv_close()
 
 #    if not os.path.exists(output_path):
 #        os.makedirs(output_path)
