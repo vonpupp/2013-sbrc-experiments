@@ -28,6 +28,16 @@ import scipy.stats as stats
 import csv
 
 
+def filter_equals(data, column, value):
+        column = data[column]
+#        print column
+        index, value = min(enumerate(column), key=lambda x: abs(x[1]-value))
+#        index, value = min(range(len(column)), key=lambda i: abs(column[i]-value))
+        print('index={}, value={}'.format(index, value))
+        return data[index]
+#        return index, value
+
+
 class TraceFilter():
     def __init__(self, fname):
         self.fname = fname
@@ -51,9 +61,9 @@ class TraceFilter():
         self.data = data
 
     def by_mean(self):
-        column = self.data['std']
-        print column
+        column = self.data['var']
+#        print column
         min = np.amin(column)
         max = np.amax(column)
         mean = np.mean(column)
-        print('min={}, max={}, mean={}'.format(min, max, mean))
+#        print('min={}, max={}, mean={}'.format(min, max, mean))

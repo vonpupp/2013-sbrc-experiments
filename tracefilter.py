@@ -22,11 +22,13 @@ __version__ = "0.1"
 __author__  = "Albert De La Fuente"
 
 
-from distsim.model.tracefilter import TraceFilter
+#from distsim.model.tracefilter import TraceFilter
+import distsim.model.tracefilter as tf
 
 
 if __name__ == "__main__":
-    t = TraceFilter('traces.csv')
-    t.by_mean()
-    print t
+    t = tf.TraceFilter('traces.csv')
+#    t.by_mean()
+    data = tf.filter_equals(t.data, 'var', 1000)
+    print data
     print('done')
