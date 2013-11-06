@@ -30,5 +30,9 @@ if __name__ == "__main__":
     t = tf.TraceFilter('traces.csv')
 #    t.by_mean()
     data = tf.filter_equals(t.data, 'var', 1000)
-    print data
+    data = tf.filter_range(t.data, 'var', 1000, 1500)
+    t.filter_rows_by_range('var', 1000, 1500)
+    t.csv_write()
+#    print data
+    print t.filtered_data
     print('done')

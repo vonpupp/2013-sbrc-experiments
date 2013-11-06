@@ -29,13 +29,28 @@ import csv
 
 
 def filter_equals(data, column, value):
-        column = data[column]
-#        print column
-        index, value = min(enumerate(column), key=lambda x: abs(x[1]-value))
-#        index, value = min(range(len(column)), key=lambda i: abs(column[i]-value))
-        print('index={}, value={}'.format(index, value))
-        return data[index]
-#        return index, value
+    column = data[column]
+    index, value = min(enumerate(column), key=lambda x: abs(x[1]-value))
+#    print('index={}, value={}'.format(index, value))
+    newdata = {}
+    for key, list_value in data.iteritems():
+        newdata[key] = list_value[index]
+    return newdata
+
+def indexes_between(list_data, minv, maxv):
+    result = []
+    for index, value in enumerate(list_data):
+        if minv <= value <= maxv:
+            result += [index]
+    return result
+
+def filter_range(data, column, minv, maxv):
+    column = data[column]
+    indexes = indexes_between(column, minv, maxv)
+    newdata = {}
+    for key, list_value in data.iteritems():
+        newdata[key] = [list_value[i] for i in indexes]
+    return newdata
 
 
 class TraceFilter():
@@ -59,11 +74,32 @@ class TraceFilter():
                     except:
                         data[field].append(str(line[field]))
         self.data = data
+        self.filtered_data = {}
 
-    def by_mean(self):
-        column = self.data['var']
-#        print column
-        min = np.amin(column)
-        max = np.amax(column)
-        mean = np.mean(column)
+    def csv_write(self):
+        f = self.filtered_data.keys()
+        print f
+        self.fname = 'eggs.csv'
+        self.file_out = open(self.fname, mode='w')
+        self.writer = csv.DictWriter(self.file_out, fieldnames=f, delimiter='\t')
+
+        for column in self.filtered_data.keys():
+            inverted_item = {}
+            for value in self.filtered_data[column]:
+                inverted_item[column] = value
+                print inverted_item
+                self.writer.writerow(inverted_item)
+#        with open('eggs.csv', 'wb') as csvfile:
+#            spamwriter = csv.DictWriter(csvfile, fieldnames=f, delimiter='\t')
+#            spamwriter.writerow(self.filtered_data)
+
+    def filter_rows_by_range(self, column, minv, maxv):
+        self.filtered_data = filter_range(self.data, column, minv, maxv)
+
+
+
+
+#        min = np.amin(column)
+#        max = np.amax(column)
+#        mean = np.mean(column)
 #        print('min={}, max={}, mean={}'.format(min, max, mean))
