@@ -23,6 +23,7 @@ import datetime
 import time
 import csv
 import pickle
+import os
 from manager import Manager
 
 
@@ -94,8 +95,9 @@ class Simulator:
     def simulate_strategy(self, strategy, trace_file, pms_scenarios, vms_scenarios):
         stamp = datetime.datetime.fromtimestamp(time.time()).strftime('%Y%m%d-%H%M%S')
         #strategy = EnergyUnawareStrategyPlacement()
+        trace_filename = os.path.basename(trace_file)
         for pms in pms_scenarios:
-            self.csv_write_simulation('results/{}-{}-{}.csv'.format(strategy.__class__.__name__, pms, stamp))
+            self.csv_write_simulation('results/{}-{}-{}-{}.csv'.format(trace_filename, strategy.__class__.__name__, pms, stamp))
             for vms in vms_scenarios:
                 scenario = self.simulate_scenario(strategy, trace_file, pms, vms)
                 self.csv_append_scenario(scenario)
