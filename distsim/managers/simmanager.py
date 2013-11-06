@@ -97,7 +97,7 @@ class Simulator:
         #strategy = EnergyUnawareStrategyPlacement()
         trace_filename = os.path.basename(trace_file)
         for pms in pms_scenarios:
-            self.csv_write_simulation('results/{}-{}-{}-{}.csv'.format(trace_filename, strategy.__class__.__name__, pms, stamp))
+            self.csv_write_simulation('results/simulation-{}-{}-{}-{}.csv'.format(trace_filename, strategy.__class__.__name__, str(pms).zfill(3), stamp))
             for vms in vms_scenarios:
                 scenario = self.simulate_scenario(strategy, trace_file, pms, vms)
                 self.csv_append_scenario(scenario)
