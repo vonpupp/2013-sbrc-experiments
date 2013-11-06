@@ -33,8 +33,8 @@ def get_default_arg(default_value, arg):
 
 if __name__ == "__main__":
     seu = 1
-    sksp = 0
-    sec = 0
+    sksp = 1
+    sec = 1
 
     eu_params = ''
     ksp_params = ''
@@ -46,7 +46,7 @@ if __name__ == "__main__":
     if sec == 1:
         ec_params = '-sec 1'
 
-    traces_scenarios = [
+    trace_scenarios = [
         'planetlab-workload-traces/20110409/146-179_surfsnel_dsl_internl_net_root',
         'planetlab-workload-traces/20110409/host4-plb_loria_fr_uw_oneswarm',
         'planetlab-workload-traces/20110420/plgmu4_ite_gmu_edu_rnp_dcc_ufjf',
@@ -60,13 +60,15 @@ if __name__ == "__main__":
         'planetlab-workload-traces/20110322/planetlab-wifi-01_ipv6_lip6_fr_inria_omftest'
     ]
 
-    hosts_scenarios = range(10, 110, 10)
+    host_scenarios = range(10, 110, 10)
+    simulation_scenarios = range(1, 31)
 
-    for hosts in hosts_scenarios:
-        for trace in traces_scenarios:
-            command = 'python distsim.py -t {} -o {} -pm {} -vma 16 -vmo 304 -vme 16 {} {} {}'\
-                    .format(trace, 'results', hosts, eu_params, ksp_params, ec_params)
-            os.system(command)
+    for trace in trace_scenarios:
+        for host in host_scenarios:
+            for simulation in simulation_scenarios:
+                command = 'python distsim.py -t {} -o {} -pm {} -vma 16 -vmo 304 -vme 16 {} {} {}'\
+                        .format(trace, 'results', host, eu_params, ksp_params, ec_params)
+                os.system(command)
     # ./ distsim.py -h 72 -vma 16 -vmo 304 -vme 16
     #   -t planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p
     #   -o results/72-bla
