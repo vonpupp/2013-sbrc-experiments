@@ -16,7 +16,7 @@
 # limitations under the License.
 
 """
-TraceAnalizer :: A VM trace analyzer
+SummarizeData :: Data summarizer
 """
 __version__ = "0.1"
 __author__  = "Albert De La Fuente"
@@ -24,9 +24,31 @@ __author__  = "Albert De La Fuente"
 
 #from distsim.model.tracefilter import TraceFilter
 import distsim.analysis.summarizedata as sd
+import distsim.analysis.csvloader as csvl
+import distsim.analysis.plotdata as plot
 
+
+def summarize_file(fname):
+    s = sd.SummarizeData('/home/afu/2013-sbrc-experiments/results')
+    best, worst, average = s.load_all(fname)
+    s.csv_write()
 
 if __name__ == "__main__":
-    s = sd.SummarizeData('/home/afu/2013-sbrc-experiments/results')
-    s.load_all('simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-010-')
-    print('done')
+    fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-020'
+    summarize_file(fname)
+    
+    fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-OpenOptStrategyPlacement-020'
+    summarize_file(fname)
+    
+    fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EvolutionaryComputationStrategyPlacement-020'
+    summarize_file(fname)
+    
+    #feu = 'simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-020-best'
+    #fksp = 'simulation-146-179_surfsnel_dsl_internl_net_root-OpenOptStrategyPlacement-020-best'
+    #fec = 'simulation-146-179_surfsnel_dsl_internl_net_root-EvolutionaryComputationStrategyPlacement-020-best'
+    #data_eu = csvl.CSVLoader(feu)
+    #data_ksp = csvl.CSVLoader(fksp)
+    #data_ec = csvl.CSVLoader(fec)
+    #p = plot.GraphGenerator(data_eu, data_ksp, data_ec)
+    #p.plot_all()
+    #print('done')
