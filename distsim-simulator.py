@@ -69,6 +69,10 @@ if __name__ == "__main__":
                 command = 'python distsim.py -t {} -o {} -pm {} -vma 16 -vmo 304 -vme 16 {} {} {}'\
                         .format(trace, 'results', host, eu_params, ksp_params, ec_params)
                 os.system(command)
+                
+            #for algorithm...
+            #    sumarize trace
+                
     # ./ distsim.py -h 72 -vma 16 -vmo 304 -vme 16
     #   -t planetlab-workload-traces/merkur_planetlab_haw-hamburg_de_ yale_p4p
     #   -o results/72-bla

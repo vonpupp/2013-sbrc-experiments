@@ -30,18 +30,69 @@ import distsim.analysis.plotdata as plot
 
 def summarize_file(fname):
     s = sd.SummarizeData('/home/afu/2013-sbrc-experiments/results')
-    best, worst, average = s.load_all(fname)
+    best, worst, average = s.load_pm_scenario(fname)
     s.csv_write()
 
 if __name__ == "__main__":
-    fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-020'
-    summarize_file(fname)
+    #'planetlab-workload-traces/20110409/146-179_surfsnel_dsl_internl_net_root',
+    #'planetlab-workload-traces/20110409/host4-plb_loria_fr_uw_oneswarm',
+    #'planetlab-workload-traces/20110420/plgmu4_ite_gmu_edu_rnp_dcc_ufjf',
+    #
+    #'planetlab-workload-traces/20110309/planetlab1_fct_ualg_pt_root',
+    #'planetlab-workload-traces/20110325/host3-plb_loria_fr_inria_omftest',
+    #'planetlab-workload-traces/20110412/planetlab1_georgetown_edu_nus_proxaudio',
+    #
+    #'planetlab-workload-traces/20110306/planetlab1_dojima_wide_ad_jp_princeton_contdist',
+    #'planetlab-workload-traces/planetlab-selected/planetlab-20110409-filtered_planetlab1_s3_kth_se_sics_peerialism',
+    #'planetlab-workload-traces/20110322/planetlab-wifi-01_ipv6_lip6_fr_inria_omftest'
+    #trace = '146-179_surfsnel_dsl_internl_net_root'
+    #algorithm = 'EnergyUnawareStrategyPlacement'
+    #scenario = '020'
     
-    fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-OpenOptStrategyPlacement-020'
-    summarize_file(fname)
     
-    fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EvolutionaryComputationStrategyPlacement-020'
-    summarize_file(fname)
+    trace_scenarios = [
+        '146-179_surfsnel_dsl_internl_net_root',
+        #'host4-plb_loria_fr_uw_oneswarm',
+        #'plgmu4_ite_gmu_edu_rnp_dcc_ufjf',
+        #
+        #'planetlab1_fct_ualg_pt_root',
+        #'host3-plb_loria_fr_inria_omftest',
+        #'planetlab1_georgetown_edu_nus_proxaudio',
+        #
+        #'planetlab1_dojima_wide_ad_jp_princeton_contdist',
+        #'planetlab-20110409-filtered_planetlab1_s3_kth_se_sics_peerialism',
+        #'planetlab-wifi-01_ipv6_lip6_fr_inria_omftest'
+    ]
+    algorithm_scenarios = [
+        'EnergyUnawareStrategyPlacement',
+        'OpenOptStrategyPlacement',
+        'EvolutionaryComputationStrategyPlacement'
+    ]
+    host_scenarios = range(10, 110, 10)
+    simulation_scenarios = range(1, 31)
+    
+    result_dir = '/home/afu/2013-sbrc-experiments/results'
+    for trace in trace_scenarios:
+        for host in host_scenarios:
+            per_algoritm_summary = {}
+            for algorithm in algorithm_scenarios:
+                fname = 'simulation-' + trace + '-' + algorithm + '-' + str(host).zfill(3)
+                print('processing {}...'.format(fname))
+                d = sd.SummarizeData(result_dir)
+                d.load_pm_scenario(fname)
+                per_algoritm_summary[algorithm] = d
+                d.csv_write()
+            p = plot.GraphGenerator(per_algoritm_summary, result_dir)
+            p.plot_all(host, trace)
+        
+    #fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-020'
+    #summarize_file(fname)
+    #
+    #fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-OpenOptStrategyPlacement-020'
+    #summarize_file(fname)
+    #
+    #fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EvolutionaryComputationStrategyPlacement-020'
+    #summarize_file(fname)
     
     #feu = 'simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-020-best'
     #fksp = 'simulation-146-179_surfsnel_dsl_internl_net_root-OpenOptStrategyPlacement-020-best'

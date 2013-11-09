@@ -60,8 +60,13 @@ class SummarizeData():
                         except:
                             d[attribute] = [str(value)]
             self.summary_list.append(d)
-        print self.summary_list
-        
+        #print self.summary_list
+    
+    def get_vms_scenarios(self):
+        self.vms_scenarios = []
+        for vms in self.summary_list:
+            self.vms_scenarios += [int(vms['#VM'][0])]
+    
     def map_column(self, scenario, column, selector):
         return selector(scenario[column])
         #return map(selector, l)
@@ -92,7 +97,7 @@ class SummarizeData():
     def first_item(self, l):
         return l[0]
         
-    def summarize_data(self):
+    def summarize_attributes(self):
         self.worst_case = []
         self.best_case = []
         self.average_case = []
@@ -121,16 +126,20 @@ class SummarizeData():
         for row in self.reader:
             self.data[simulation_counter] += [row]
 
-    def load_all(self, pattern):
+    def load_pm_scenario(self, pattern):
         self.pattern = pattern
         self.files = glob.glob(os.path.join(self.working_dir, pattern+'*.csv'))
         self.files = sorted(self.files)
         for file in self.files:
             self.load_file(file)
         self.remap_data()
-        self.summarize_data()
+        self.summarize_attributes()
+        self.get_vms_scenarios()
         return self.best_case, self.worst_case, self.average_case
-        print 'ok'
+        #print 'ok'
+        
+    def summarize_trace(self, trace_file):
+        pass
 
     def csv_write_summary(self, fname, fields, summarized_data):
         self.fname = fname
