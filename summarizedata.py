@@ -27,6 +27,6 @@ import distsim.analysis.summarizedata as sd
 
 
 if __name__ == "__main__":
-    s = sd.SummarizeData('/home/afu/2013-sbrc-experiments/results/30simu')
-    s.load_all('simulation-146-179_surfsnel_dsl_internl_net_root-OpenOptStrategyPlacement-020-*.csv')
+    s = sd.SummarizeData('/home/afu/2013-sbrc-experiments/results')
+    s.load_all('simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-010-')
     print('done')
