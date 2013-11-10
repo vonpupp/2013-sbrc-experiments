@@ -94,9 +94,10 @@ class GraphGenerator:
         ax.legend(loc='upper center', bbox_to_anchor=(0.5, -0.15),
             fancybox=True, shadow=False, ncol=5)
         
-        plt.savefig(self.result_dir + '/figure-' + trace_file +
+        plt.savefig(self.result_dir + '/figure-' + trace_file + '-' +
             str(hosts_scenario).zfill(3) + '-' +
-            case + '-' + title + '.png')
+            title + '-' + case + '.png')
+        plt.close()
         #return plt.savefig(self.result_dir + '/' + str(scenario) +
         #                   x_title + ' vs ' + y_title + '.png')
     
@@ -164,88 +165,48 @@ class GraphGenerator:
         self.data_eu = self.data['EnergyUnawareStrategyPlacement']
         self.data_ksp = self.data['OpenOptStrategyPlacement']
         self.data_ec = self.data['EvolutionaryComputationStrategyPlacement']
-        
         self.x_key = '#VM'
-        self.y_key = 'KW'
         self.x_title = 'Number of VMs'
+        
+        self.y_key = 'KW'
         self.y_title = 'Energy consumed (Watts)',
         self.title = 'Energy consumption comparison'
-        
         self.save_fig_cases()
-
-        self.x_key = '#VM'
+        
         self.y_key = 'T'
-        self.x_title = 'Number of VMs'
         self.y_title = 'Time (seconds)',
         self.title = 'Time comparison'
-        
         self.save_fig_cases()
         
-        #x2 = self.vms_scenarios
+        self.y_key = '#PM-U'
+        self.y_title = 'No. physical machines used',
+        self.title = 'Used physical machines comparison'
+        self.save_fig_cases()
         
-        #y2a = self.remap_data(data_eu.average_case, 'KW')
-        #y2b = self.remap_data(data_ksp.average_case, 'KW')
-        #y2c = self.remap_data(data_ec.average_case, 'KW')
-        #self.save_fig(
-        #    hosts_scenario,
-        #    trace_file,
-        #    'best',
-        #    data_eu.best_case,
-        #    data_ksp.best_case,
-        #    data_ec.best_case,
-        #    '#VM', 'KW',
-        #    'Number of VMs', 'Energy consumed (Watts)',
-        #    'Energy consumption comparison',
-        #    )
-        #
-        #self.save_fig(
-        #    hosts_scenario,
-        #    trace_file,
-        #    'worst',
-        #    data_eu.worst_case,
-        #    data_ksp.worst_case,
-        #    data_ec.worst_case,
-        #    '#VM', 'KW',
-        #    'Number of VMs', 'Energy consumed (Watts)',
-        #    'Energy consumption comparison',
-        #    )
-        #        
-        #self.save_fig(
-        #    hosts_scenario,
-        #    trace_file,
-        #    'average',
-        #    data_eu.average_case,
-        #    data_ksp.average_case,
-        #    data_ec.average_case,
-        #    '#VM', 'KW',
-        #    'Number of VMs', 'Energy consumed (Watts)',
-        #    'Energy consumption comparison',
-        #    )
-        #
-        #self.save_fig(scenario, data_ref, data1, data2,
-        #    'virtual_mahines_count', 'physical_machines_used',
-        #    'Number of VMs', 'No. physical machines used',
-        #    'Used physical machines comparison')
-        #
-        #self.save_fig(scenario, data_ref, data1, data2,
-        #    'virtual_mahines_count', 'physical_machines_suspended',
-        #    'Number of VMs', 'No. physical machines suspended',
-        #    'Suspended physical machines comparison')
-        #
-        #self.save_fig(scenario, data_ref, data1, data2,
-        #    'virtual_mahines_count', 'physical_machines_idle',
-        #    'Number of VMs', 'No. physical machines idle',
-        #    'Idle physical machines comparison')
-        #
-        #self.save_fig(scenario, data_ref, data1, data2,
-        #    'virtual_mahines_count', 'virtual_machines_placed',
-        #    'Number of VMs', 'No. virtual machines placed',
-        #    'Placed VMs comparison')
-        #
-        #self.save_fig(scenario, data_ref, data1, data2,
-        #    'virtual_mahines_count', 'virtual_machines_unplaced',
-        #    'Number of VMs', 'No. virtual machines not placed',
-        #    'Unplaced VMs comparison')
+        self.y_key = '#PM-U'
+        self.y_title = 'No. physical machines used',
+        self.title = 'Used physical machines comparison'
+        self.save_fig_cases()
+        
+        self.y_key = '#PM-S'
+        self.y_title = 'No. physical machines suspended',
+        self.title = 'Suspended physical machines comparison'
+        self.save_fig_cases()
+        
+        self.y_key = '#PM-I'
+        self.y_title = 'No. physical machines idle',
+        self.title = 'Idle physical machines comparison'
+        self.save_fig_cases()
+        
+        self.y_key = '#VM-P'
+        self.y_title = 'No. virtual machines placed',
+        self.title = 'Placed VMs comparison'
+        self.save_fig_cases()
+        
+        self.y_key = 'VM-U'
+        self.y_title = 'No. virtual machines not placed',
+        self.title = 'Unplaced VMs comparison'
+        self.save_fig_cases()
         
         #result['physical_mahines_count'].append(int(row[0]))
         #result['virtual_mahines_count'].append(int(row[1]))

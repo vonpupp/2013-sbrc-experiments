@@ -71,7 +71,14 @@ class SummarizeData():
         return selector(scenario[column])
         #return map(selector, l)
     
-    def worst_best_medium(self, scenario, column, bselector, wselector, mselector):
+    def best_worst_average_cases(self, scenario, column, bselector, wselector, mselector):
+        best_case = self.best_case[len(self.best_case)-1]
+        best_case[column] = self.map_column(scenario, column, bselector)
+        try:
+            best_case[column + '-95'] = np.percentile(scenario[column], 95)
+        except:
+            best_case[column + '-95'] = 0
+            
         worst_case = self.worst_case[len(self.worst_case)-1]
         worst_case[column] = self.map_column(scenario, column, wselector)
         #test = scipy.stats.norm.interval(0.95, loc=mean, scale=std)
@@ -79,13 +86,6 @@ class SummarizeData():
             worst_case[column + '-95'] = np.percentile(scenario[column], 95)
         except:
             worst_case[column + '-95'] = 0
-        
-        best_case = self.best_case[len(self.best_case)-1]
-        best_case[column] = self.map_column(scenario, column, bselector)
-        try:
-            best_case[column + '-95'] = np.percentile(scenario[column], 95)
-        except:
-            best_case[column + '-95'] = 0
         
         average_case = self.average_case[len(self.average_case)-1]
         average_case[column] = self.map_column(scenario, column, mselector)
@@ -105,16 +105,17 @@ class SummarizeData():
             self.worst_case.append({})
             self.best_case.append({})
             self.average_case.append({})
-            self.worst_best_medium(scenario, '#PM', min, max, np.mean)
-            self.worst_best_medium(scenario, '#VM', max, min, np.mean)
-            self.worst_best_medium(scenario, '#PM-U', max, min, np.mean)
-            self.worst_best_medium(scenario, '#PM-S', max, min, np.mean)
-            self.worst_best_medium(scenario, '#PM-I', min, max, np.mean)
-            self.worst_best_medium(scenario, '#VM-P', max, min, np.mean)
-            self.worst_best_medium(scenario, 'VM-U', min, max, np.mean)
-            self.worst_best_medium(scenario, 'KW', min, max, np.mean)
-            self.worst_best_medium(scenario, 'strategy', self.first_item, self.first_item, self.first_item)
-            self.worst_best_medium(scenario, 'T', min, max, np.mean)
+            self.best_worst_average_cases(scenario, '#PM', min, max, np.mean)
+            self.best_worst_average_cases(scenario, '#VM', max, min, np.mean)
+            self.best_worst_average_cases(scenario, '#PM-U', min, max, np.mean)
+#            self.best_worst_average_cases(scenario, '#PM-U', max, min, np.mean)
+            self.best_worst_average_cases(scenario, '#PM-S', max, min, np.mean)
+            self.best_worst_average_cases(scenario, '#PM-I', min, max, np.mean)
+            self.best_worst_average_cases(scenario, '#VM-P', max, min, np.mean)
+            self.best_worst_average_cases(scenario, 'VM-U', min, max, np.mean)
+            self.best_worst_average_cases(scenario, 'KW', min, max, np.mean)
+            self.best_worst_average_cases(scenario, 'strategy', self.first_item, self.first_item, self.first_item)
+            self.best_worst_average_cases(scenario, 'T', min, max, np.mean)
 
     def load_file(self, fname):
         self.fname = fname

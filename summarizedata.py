@@ -52,7 +52,7 @@ if __name__ == "__main__":
     
     trace_scenarios = [
         '146-179_surfsnel_dsl_internl_net_root',
-        #'host4-plb_loria_fr_uw_oneswarm',
+        'host4-plb_loria_fr_uw_oneswarm',
         #'plgmu4_ite_gmu_edu_rnp_dcc_ufjf',
         #
         #'planetlab1_fct_ualg_pt_root',
