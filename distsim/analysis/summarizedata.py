@@ -31,10 +31,18 @@ import csv
 import glob
 import os
 
+def mean_confidence_interval(data, confidence=0.95):
+    a = 1.0*np.array(data)
+    n = len(a)
+    m, se = np.mean(a), scipy.stats.sem(a)
+    h = se * sp.stats.t._ppf((1+confidence)/2., n-1)
+    return m, h
+
 class SummarizeData():
     def __init__(self, working_dir):
         self.working_dir = working_dir
         self.data = []
+        self.scenarios_repetition = []
         self.summary_list = {}
 
     def remap_data(self):
@@ -75,24 +83,33 @@ class SummarizeData():
         best_case = self.best_case[len(self.best_case)-1]
         best_case[column] = self.map_column(scenario, column, bselector)
         try:
-            best_case[column + '-95'] = np.percentile(scenario[column], 95)
+            m, ci = mean_confidence_interval(scenario[column])
+            best_case[column + '-95m'] = m
+            best_case[column + '-95h'] = ci
         except:
-            best_case[column + '-95'] = 0
+            best_case[column + '-95m'] = 0
+            best_case[column + '-95h'] = 0
             
         worst_case = self.worst_case[len(self.worst_case)-1]
         worst_case[column] = self.map_column(scenario, column, wselector)
         #test = scipy.stats.norm.interval(0.95, loc=mean, scale=std)
         try:
-            worst_case[column + '-95'] = np.percentile(scenario[column], 95)
+            m, ci = mean_confidence_interval(scenario[column])
+            worst_case[column + '-95m'] = m
+            worst_case[column + '-95h'] = ci
         except:
-            worst_case[column + '-95'] = 0
+            worst_case[column + '-95m'] = 0
+            worst_case[column + '-95h'] = 0
         
         average_case = self.average_case[len(self.average_case)-1]
         average_case[column] = self.map_column(scenario, column, mselector)
         try:
-            average_case[column + '-95'] = np.percentile(scenario[column], 95)
+            m, ci = mean_confidence_interval(scenario[column])
+            average_case[column + '-95m'] = m
+            average_case[column + '-95h'] = ci
         except:
-            average_case[column + '-95'] = 0
+            average_case[column + '-95m'] = 0
+            average_case[column + '-95h'] = 0
     
     def first_item(self, l):
         return l[0]
@@ -129,7 +146,8 @@ class SummarizeData():
 
     def load_pm_scenario(self, pattern):
         self.pattern = pattern
-        self.files = glob.glob(os.path.join(self.working_dir, pattern+'*.csv'))
+        #FIXME: Exclude best, worst average files
+        self.files = glob.glob(os.path.join(self.working_dir, pattern + '-[0-9]*.csv'))
         self.files = sorted(self.files)
         for file in self.files:
             self.load_file(file)
