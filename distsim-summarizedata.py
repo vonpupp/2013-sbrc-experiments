@@ -52,15 +52,15 @@ if __name__ == "__main__":
     outdir = get_default_arg('/home/afu/2013-sbrc-experiments/results', args.indir)
     
     trace_scenarios = [
-        '146-179_surfsnel_dsl_internl_net_root',
+        #'146-179_surfsnel_dsl_internl_net_root',
         #'host4-plb_loria_fr_uw_oneswarm',
         #'plgmu4_ite_gmu_edu_rnp_dcc_ufjf',
         
         #'planetlab1_fct_ualg_pt_root',
         #'host3-plb_loria_fr_inria_omftest',
         #'planetlab1_georgetown_edu_nus_proxaudio',
-        #
-        #'planetlab1_dojima_wide_ad_jp_princeton_contdist',
+        
+        'planetlab1_dojima_wide_ad_jp_princeton_contdist',
         #'planetlab-20110409-filtered_planetlab1_s3_kth_se_sics_peerialism',
         #'planetlab-wifi-01_ipv6_lip6_fr_inria_omftest'
     ]
@@ -72,6 +72,8 @@ if __name__ == "__main__":
     host_scenarios = range(10, 110, 10)
     simulation_scenarios = range(1, 31)
     
+    p = plot.GraphGenerator(indir)
+    
     for trace in trace_scenarios:
         for host in host_scenarios:
             per_algoritm_summary = {}
@@ -82,8 +84,9 @@ if __name__ == "__main__":
                 d.load_pm_scenario(fname)
                 per_algoritm_summary[algorithm] = d
                 d.csv_write()
-            p = plot.GraphGenerator(per_algoritm_summary, indir)
-            p.plot_all_algorithm_comparison(host, trace)
+            p.set_data(per_algoritm_summary)
+            #p.plot_all_algorithm_comparison(host, trace)
+        p.plot_all_confidence_interval_comparison(trace)
         
     #fname = 'simulation-146-179_surfsnel_dsl_internl_net_root-EnergyUnawareStrategyPlacement-020'
     #summarize_file(fname)
