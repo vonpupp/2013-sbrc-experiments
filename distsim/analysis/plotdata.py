@@ -5,9 +5,13 @@ import fnmatch
 import os
 import csv
 import matplotlib.pyplot as plt
-from matplotlib import pylab 
+from matplotlib import pylab
 #from matplotlib.font_manager import FontProperties
 from matplotlib.patches import Polygon
+from pylab import *
+import numpy as np
+import scipy as sp
+import scipy.stats
 
 dir = 'results'
 pms_scenarios = [72] #range(10, 110, 10)
@@ -21,12 +25,34 @@ def fill_between(ax, x, y1, y2, **kwargs):
     ax.autoscale_view()
     return poly
 
+def do_error_bar(x, m, e, lw=2, w=2):
+    wc = w/2
+    o = plot([x-wc,x+wc], [m,m], color='b', lw=lw)
+    o = plot([x,x], [m+e,m-e], color='b', lw=lw)
+    o = plot([x-w,x+w], [m+e,m+e], color='r', lw=lw)
+    o = plot([x-w,x+w], [m-e,m-e], color='g', lw=lw)
+    
+def mean_confidence_interval(data, confidence=0.95):
+    a = 1.0 * np.array(data)
+    n = len(a)
+    m, se = np.mean(a), scipy.stats.sem(a)
+    h = se * sp.stats.t._ppf((1+confidence)/2., n-1)
+    return m, h
+
+def transposed(lists):
+   if not lists: return []
+   return map(lambda *row: list(row), *lists)
+
 class GraphGenerator:
-    def __init__(self, data, result_dir):
-        self.data = data
+    def __init__(self, result_dir):
+        self.data = None
+        self.vms_scenarios = None
         self.result_dir = result_dir
-        self.vms_scenarios = self.data.itervalues().next().vms_scenarios
         self.file_list = []
+        
+    def set_data(self, data):
+        self.data = data
+        self.vms_scenarios = self.data.itervalues().next().vms_scenarios
 
     #def get_experiments_file(self, scenario, patter='*'):
     #    self.file = None
@@ -48,7 +74,7 @@ class GraphGenerator:
         return result
 
 
-    def save_fig(self, hosts_scenario, trace_file, case,
+    def algorithms_comparison_figure(self, hosts_scenario, trace_file, case,
                  data_ref, data1, data2,
                  x_aspect, y_aspect,
                  x_title, y_title, title):
@@ -101,8 +127,8 @@ class GraphGenerator:
         #return plt.savefig(self.result_dir + '/' + str(scenario) +
         #                   x_title + ' vs ' + y_title + '.png')
     
-    def save_fig_cases(self):
-        self.save_fig(
+    def algorithms_comparison_figure_cases(self):
+        self.algorithms_comparison_figure(
             self.hosts_scenario,
             self.trace_file,
             'best',
@@ -114,7 +140,7 @@ class GraphGenerator:
             self.title,
             )
         
-        self.save_fig(
+        self.algorithms_comparison_figure(
             self.hosts_scenario,
             self.trace_file,
             'worst',
@@ -126,7 +152,7 @@ class GraphGenerator:
             self.title,
             )
                 
-        self.save_fig(
+        self.algorithms_comparison_figure(
             self.hosts_scenario,
             self.trace_file,
             'average',
@@ -137,7 +163,82 @@ class GraphGenerator:
             self.x_title, self.y_title,
             self.title,
             )
+        
+    def algorithm_confidence_interval_figure(self, trace_file, algorithm,
+                 data,
+                 x_aspect, y_aspect,
+                 x_title, y_title, title):
+        
+        reversed_data = transposed(data)
+
+        fig, ax = plt.subplots()
+        ax.set_xlabel(x_title, fontsize=18)
+        ax.set_ylabel(y_title, fontsize=18)
+        ax.set_title(title + ' (' + self.legend(algorithm) + ')')
+        x = self.vms_scenarios
+        ax.xaxis.set_ticks(x)
+        pylab.xticks(x, self.vms_ticks(x), rotation='vertical', verticalalignment='top')
     
+        ax = fig.gca()
+        
+        plt.grid(True)
+        for scenario in reversed_data:
+            x_serie = []
+            y_serie = []
+            x = int(scenario[0][x_aspect])
+            
+            for repetition in scenario:
+                y = float(repetition[y_aspect])
+                scatter(x, y, s=1, color='k')
+                #ax.plot(x, y, color='red', ls='-', marker='.')#, label=self.legend(data_ref[0]['strategy']))
+                y_serie += [y]
+                x_serie += [x]
+            
+            m, ci = mean_confidence_interval(y_serie)
+            
+            do_error_bar(x, m, ci, 1, 4)
+            #print(x_serie)
+            #print(y_serie)
+            #print(m)
+            #print(ci)
+        
+        #plt.show()
+        plt.savefig(self.result_dir + '/figure-' + trace_file + '-' +
+            title + '-' + algorithm + '.png')
+#        plt.savefig('test.png')
+        plt.close()
+        
+    def algorithms_confidence_interval_figure_cases(self):
+        self.algorithm_confidence_interval_figure(
+            #self.hosts_scenario,
+            self.trace_file,
+            'EnergyUnawareStrategyPlacement',
+            self.data_eu.data,
+            self.x_key, self.y_key,
+            self.x_title, self.y_title,
+            self.title,
+        )
+        
+        self.algorithm_confidence_interval_figure(
+            #self.hosts_scenario,
+            self.trace_file,
+            'OpenOptStrategyPlacement',
+            self.data_ksp.data,
+            self.x_key, self.y_key,
+            self.x_title, self.y_title,
+            self.title,
+        )
+        
+        self.algorithm_confidence_interval_figure(
+            #self.hosts_scenario,
+            self.trace_file,
+            'EvolutionaryComputationStrategyPlacement',
+            self.data_ec.data,
+            self.x_key, self.y_key,
+            self.x_title, self.y_title,
+            self.title,
+        )
+        
     def remap_data(self, list_dict, key):
         l = {}
         for item in list_dict:
@@ -147,7 +248,7 @@ class GraphGenerator:
                 l = [item[key]]
         return l
         
-    def plot_all(self, hosts_scenario, trace_file):
+    def plot_all_algorithm_comparison(self, hosts_scenario, trace_file):
         #reference = self.get_experiments_file(scenario, 'EnergyUnawareStrategyPlacement')
         #method1 = self.get_experiments_file(scenario, 'OpenOptStrategyPlacement')
         #method2 = self.get_experiments_file(scenario, 'EvolutionaryComputationStrategyPlacement')
@@ -169,44 +270,58 @@ class GraphGenerator:
         self.x_title = 'Number of VMs'
         
         self.y_key = 'KW'
-        self.y_title = 'Energy consumed (Watts)',
+        self.y_title = 'Energy consumed (Watts)'
         self.title = 'Energy consumption comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = 'T'
-        self.y_title = 'Time (seconds)',
+        self.y_title = 'Time (seconds)'
         self.title = 'Time comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = '#PM-U'
-        self.y_title = 'No. physical machines used',
+        self.y_title = 'No. physical machines used'
         self.title = 'Used physical machines comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = '#PM-U'
-        self.y_title = 'No. physical machines used',
+        self.y_title = 'No. physical machines used'
         self.title = 'Used physical machines comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = '#PM-S'
-        self.y_title = 'No. physical machines suspended',
+        self.y_title = 'No. physical machines suspended'
         self.title = 'Suspended physical machines comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = '#PM-I'
-        self.y_title = 'No. physical machines idle',
+        self.y_title = 'No. physical machines idle'
         self.title = 'Idle physical machines comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = '#VM-P'
-        self.y_title = 'No. virtual machines placed',
+        self.y_title = 'No. virtual machines placed'
         self.title = 'Placed VMs comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
         
         self.y_key = 'VM-U'
-        self.y_title = 'No. virtual machines not placed',
+        self.y_title = 'No. virtual machines not placed'
         self.title = 'Unplaced VMs comparison'
-        self.save_fig_cases()
+        self.algorithms_comparison_figure_cases()
+        
+    def plot_all_confidence_interval_comparison(self, trace_file):
+        self.trace_file = trace_file
+        self.data_eu = self.data['EnergyUnawareStrategyPlacement']
+        self.data_ksp = self.data['OpenOptStrategyPlacement']
+        self.data_ec = self.data['EvolutionaryComputationStrategyPlacement']
+        
+        self.x_key = '#VM'
+        self.x_title = 'Number of VMs'
+        
+        self.y_key = 'KW'
+        self.y_title = 'Energy consumed (Watts 95% C.I.)'
+        self.title = 'Energy consumption - 95 percent C.I.' #'Energy consumption - 95% Confidence Interval for 30 simulations'
+        self.algorithms_confidence_interval_figure_cases()
         
         #result['physical_mahines_count'].append(int(row[0]))
         #result['virtual_mahines_count'].append(int(row[1]))
@@ -222,6 +337,7 @@ class GraphGenerator:
 #        method2 = self.get_experiments_files('EnergyUnaware*')
 
 if __name__ == '__main__':
-    gg = GraphGenerator(dir, pms_scenarios)
-    gg.create_comparison_graph()
+    #gg = GraphGenerator(dir, pms_scenarios)
+    #gg.create_comparison_graph()
+    pass
 
