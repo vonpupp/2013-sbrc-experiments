@@ -180,6 +180,12 @@ class GraphGenerator:
         pylab.xticks(x, self.vms_ticks(x), rotation='vertical', verticalalignment='top')
     
         ax = fig.gca()
+
+        scenarios_series = []
+        m_series = []
+        upper_ci_series = []
+        lower_ci_series = []
+        vms_series = []
         
         plt.grid(True)
         for scenario in reversed_data:
@@ -195,12 +201,25 @@ class GraphGenerator:
                 x_serie += [x]
             
             m, ci = mean_confidence_interval(y_serie)
+            #scenarios_series += [scenario['#VM']]
+            m_series += [m]
+            upper_ci_series += [m+ci]
+            lower_ci_series += [m-ci]
+            vms_series += [x_serie[0]]
+            #ax.plot(x_serie[0], m, color='red', ls='-', marker='.', label=self.legend(algorithm))
             
             do_error_bar(x, m, ci, 1, 4)
             #print(x_serie)
             #print(y_serie)
             #print(m)
             #print(ci)
+            
+        print vms_series
+        print m_series
+        ax.plot(vms_series, m_series, color='blue', ls='-', marker='.', label=self.legend(algorithm))
+        ax.plot(vms_series, upper_ci_series, color='red', ls='-.', marker='.', label=self.legend(algorithm))
+        ax.plot(vms_series, lower_ci_series, color='green', ls='-.', marker='.', label=self.legend(algorithm))
+#        ax.plot(x2, y2b, color='blue', ls='-', marker='o', label=self.legend(data1[0]['strategy']))
         
         #plt.show()
         plt.savefig(self.result_dir + '/figure-' + trace_file + '-' +
@@ -319,8 +338,18 @@ class GraphGenerator:
         self.x_title = 'Number of VMs'
         
         self.y_key = 'KW'
-        self.y_title = 'Energy consumed (Watts 95% C.I.)'
+        self.y_title = 'Energy consumed (Watts) 95% C.I.'
         self.title = 'Energy consumption - 95 percent C.I.' #'Energy consumption - 95% Confidence Interval for 30 simulations'
+        self.algorithms_confidence_interval_figure_cases()
+        
+        self.y_key = 'T'
+        self.y_title = 'Time (Seconds) 95% C.I.'
+        self.title = 'Time - 95 percent C.I.' #'Energy consumption - 95% Confidence Interval for 30 simulations'
+        self.algorithms_confidence_interval_figure_cases()
+        
+        self.y_key = '#PM-S'
+        self.y_title = 'Suspended physical machines 95% C.I.'
+        self.title = 'Suspended physical machines - 95 percent C.I.' #'Energy consumption - 95% Confidence Interval for 30 simulations'
         self.algorithms_confidence_interval_figure_cases()
         
         #result['physical_mahines_count'].append(int(row[0]))
